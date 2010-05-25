@@ -251,3 +251,55 @@ match.parents <- function(cross, code, i, parents, addcov, intcov,
 
   list(code = code, pheno.cols = pheno.cols, na = na.pheno | na.covar)
 }
+######################################################################
+adjust.pheno <- function(cross, pheno.col, addcov, intcov)
+{
+  ## Adjust phenotype and covariate names and columns.
+  ## Make sure addcov and intcov are NULL or lists.
+  pheno.names <- find.pheno.names(cross, pheno.col)
+  make.list <- function(x, namex, len) {
+    out <- x
+    if(!is.null(x)) {
+      if(is.list(x)) {
+        if(length(x) != len)
+          stop(paste(namex, "is list but not of same length as pheno.col"))
+      }
+      else {
+        out <- vector(mode="list", length = len)
+        for(i in seq(len))
+          out[[i]] <- x
+      }
+    }
+    out
+  }
+  addcov.names <- make.list(find.pheno.names(cross, addcov))
+  intcov.names <- make.list(find.pheno.names(cross, intcov))
+  cross$pheno <-
+    cross$pheno[, unique(c(pheno.names, unlist(addcov.names), unlist(intcov.names)))]
+  pheno.col <- find.pheno(cross, pheno.names)
+  if(!is.null(addcov))
+    for(i in seq(length(addcov)))
+        addcov[[i]] <- find.pheno(cross, addcov.names[[i]])
+  if(!is.null(intcov))
+    for(i in seq(length(intcov)))
+        intcov[[i]] <- find.pheno(cross, intcov.names[[i]])
+
+  list(cross = cross, pheno.col = pheno.col, pheno.names = pheno.names,
+       addcov = addcov, intcov = intcov)
+}
+######################################################################
+find.pheno.names <- function(cross, pheno.col)
+{
+  if(!is.null(pheno.col)) {
+    if(is.list(pheno.col)) {
+      for(i in seq(length(pheno.col)))
+        if(!is.character(pheno.col[[i]]))
+          pheno.col[[i]] <- names(cross$pheno)[pheno.col[[i]]]
+    }
+    else {
+      if(!is.character(pheno.col))
+        pheno.col <- names(cross$pheno)[pheno.col]
+    }
+  }
+  pheno.col
+}

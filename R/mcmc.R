@@ -18,12 +18,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   }
 
   ## Burnin must be between 0 and 1.
-  if(is.logical(burnin)) {
-    if(burnin)
-      burnin <- 0.1
-    else
-      burnin <- 0
-  }
+  if(is.logical(burnin))
+    burnin <- ifelse(burnin, 0.1, 0)
   if(burnin < 0 | burnin > 1)
     stop("burnin must be between 0 and 1")
 
@@ -87,7 +83,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   }
   cont.accept <- 0
   for(i in 2:(nSamples*thinning)){
-    M.new <- propose.new.structure(M.old, max.parents)
+    M.new <- propose.new.structure(M.old, max.parents,
+                                   verbose = (verbose > 1))
     ne.new <- nbhd.size(M.new, max.parents)[[1]]
     aux.new <- score.model(M.new, saved.scores, cross, addcov, intcov,
                            threshold, verbose, method = method, ...)
@@ -96,6 +93,9 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     tmp <- aux.new$update.scores
     if(!is.null(tmp)) {
       index <- nrow(saved.scores)
+      tmp2 <- match(tmp[,1], codes)
+      if(any(is.na(tmp2)))
+         browser()
       index <- match(tmp[,1], codes) + index * (tmp[,2] - 1)
       saved.scores[index] <- tmp[,3]
     }
@@ -153,108 +153,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   out
 }
 ######################################################################
-adjust.pheno <- function(cross, pheno.col, addcov, intcov)
-{
-  ## Adjust phenotype and covariate names and columns.
-  ## Make sure addcov and intcov are NULL or lists.
-  pheno.names <- find.pheno.names(cross, pheno.col)
-  make.list <- function(x, namex, len) {
-    out <- x
-    if(!is.null(x)) {
-      if(is.list(x)) {
-        if(length(x) != len)
-          stop(paste(namex, "is list but not of same length as pheno.col"))
-      }
-      else {
-        out <- vector(mode="list", length = len)
-        for(i in seq(len))
-          out[[i]] <- x
-      }
-    }
-    out
-  }
-  addcov.names <- make.list(find.pheno.names(cross, addcov))
-  intcov.names <- make.list(find.pheno.names(cross, intcov))
-  cross$pheno <-
-    cross$pheno[, unique(c(pheno.names, unlist(addcov.names), unlist(intcov.names)))]
-  pheno.col <- find.pheno(cross, pheno.names)
-  if(!is.null(addcov))
-    for(i in seq(length(addcov)))
-        addcov[[i]] <- find.pheno(cross, addcov.names[[i]])
-  if(!is.null(intcov))
-    for(i in seq(length(intcov)))
-        intcov[[i]] <- find.pheno(cross, intcov.names[[i]])
-
-  list(cross = cross, pheno.col = pheno.col, pheno.names = pheno.names,
-       addcov = addcov, intcov = intcov)
-}
-######################################################################
-propose.new.structure <- function(M0, max.parents = 3)
-{
-  M <- M0
-  le.nodes <- ncol(M0)
-  flag <- 0
-  while(flag == 0){
-    node <- sample(c(1:le.nodes),1)
-    move <- sample(c("add","delete","reverse"),1)
-    if(move == "add"){
-      aux1 <- forbidden.additions(M0, node, max.parents)
-      if(!is.null(c(aux1$upf,aux1$downf))){
-        aux2 <- match(sort(c(aux1$upf,aux1$downf)),c(1:le.nodes))
-        aux3 <- c(1:le.nodes)[-c(aux2,node)]
-      }
-      else{
-        aux3 <- c(1:le.nodes)[-node]
-      }
-      if(length(aux3)) {
-        ## Check if any of aux3 is at or above max.parents.
-        wh <- which(apply(M0[, aux3, drop = FALSE], 2, sum) >= max.parents)
-        if(length(wh))
-          aux3 <- aux3[-wh]
-      }
-      if(length(aux3) == 1){
-        M[node,aux3] <- 1
-        flag <- 1
-      } 
-      else if(length(aux3) > 1){
-        head <- sample(aux3,1)
-        M[node,head] <- 1
-        flag <- 1
-      }
-    }
-    if(move == "reverse"){
-      aux1 <- check.reversions(M0, node, max.parents)$allowed
-      if(!is.null(aux1)){
-        le.rev <- nrow(aux1)
-        aux2 <- sample(c(1:le.rev),1)
-        aux3 <- aux1[aux2,]
-        M[aux3[1],aux3[2]] <- 0
-        M[aux3[2],aux3[1]] <- 1
-        flag <- 1
-      }
-    }
-    if(move == "delete"){
-      aux1 <- which(M0[,node] == 1)
-      if(length(aux1) == 1){
-        M[aux1,node] <- 0
-        flag <- 1
-      }
-      if(length(aux1) > 1){
-        aux2 <- sample(aux1,1)
-        M[aux2,node] <- 0
-        flag <- 1
-      }
-    }
-  }
-  M
-}
-######################################################################
 nbhd.size <- function(M, max.parents = 3)
 {
-  ## After accounting for scanone, 90% of time is in this routine.
-  ## Of that, 70% is in check.reversions, 30% in forbidden.additions.
-  ## Further, acceptance rate is 20%.
-  
   n.deletions <- sum(M)
   n.additions <- 0 
   n.reversions <- 0 
@@ -273,40 +173,129 @@ nbhd.size <- function(M, max.parents = 3)
        n.reversions=n.reversions)
 }
 ######################################################################
+propose.new.structure <- function(M, max.parents = 3, verbose = FALSE)
+{
+  ## Acceptance rate is 20%. Could we improve here?
+
+  ## To speed up, use M as logical matrix. Still return 0/1 matrix for now.
+  le.nodes <- ncol(M)
+  flag <- 0
+  while(flag == 0){
+    ## Pick node and decide on add/delete/reverse.
+    ## Keep doing this until successful.
+    
+    node <- sample(seq(le.nodes),1)
+    move <- sample(c("add","delete","reverse"),1)
+
+    if(verbose)
+      cat(node, move, "")
+    
+    ## Add an edge with a direction.
+    if(move == "add"){
+      aux1 <- forbidden.additions(M, node, max.parents)
+      ## Is there a down option?
+      aux3 <- unique(c(node, aux1$upf, aux1$downf))
+      aux3 <- seq(le.nodes)[-aux3]
+
+      if(length(aux3)) {
+        ## Check if any of aux3 is at or above max.parents.
+        wh <- which(apply(M[, aux3, drop = FALSE], 2, sum) >= max.parents)
+        if(length(wh))
+          aux3 <- aux3[-wh]
+      }
+      if(length(aux3)) {
+        if(length(aux3) > 1)
+          aux3 <- sample(aux3, 1)
+        M[node,aux3] <- 1
+        if(verbose)
+          cat(aux3, "\n")
+        if(node == 3 & aux3 == 7)
+          browser()
+        flag <- 1
+      } 
+    }
+
+    ## Reverse direction of an edge.
+    if(move == "reverse"){
+      aux1 <- check.reversions(M, node, max.parents)$allowed
+      if(!is.null(aux1)){
+        le.rev <- nrow(aux1)
+        aux3 <- sample(seq(le.rev), 1)
+        aux3 <- aux1[aux3, ]
+        M[aux3[1], aux3[2]] <- 0
+        M[aux3[2], aux3[1]] <- 1
+        if(verbose)
+          cat(aux3[1], aux3[2], "\n")
+        flag <- 1
+      }
+    }
+
+    ## Delete an existing edge.
+    if(move == "delete"){
+      aux1 <- which(M[, node] == 1)
+      if(length(aux1)){
+        if(length(aux1) > 1)
+          aux1 <- sample(aux1, 1)
+        M[aux1, node] <- 0
+        if(verbose)
+          cat(aux1, "\n")
+        flag <- 1
+      }
+    }
+  }
+  M
+}
 ######################################################################
 forbidden.additions <- function(M, node, max.parents = 3)
 {
   ## upf are forbidden upstream nodes (already present downstream).
   ## downf are forbidden downstream nodes (already present upstream).
   ## Check on cycles is one step. See check.reversions() for longer cycles.
-  
+
+  ## Forbidden upstream additions
   upf <- which(M[node,] == 1)
+  if(length(upf)==0)
+    upf <- NULL
+
+  ## Forbidden downstream additions. More complicated.
   downf <- which(M[,node] == 1)
   le <- length(downf)
-
+  
   ## If at least max.parents are causal for node, forbid any more.
   if(le >= max.parents)
     downf <- seq(nrow(M))[-node]
+  else {
+    if(le > 0)
+      downf <- check.downstream(M, downf)
+    else
+      downf <- NULL
+  }
   
-  le <- length(downf)
-  if(le > 0){  
-    flag <- 0
-    while(flag == 0){
-      aux1 <- c()
-      for(i in 1:le){
-        aux1 <- c(aux1,which(M[,downf[i]] == 1))
-        aux1 <- unique(aux1)
-      }
-      new.downf <- sort(unique(c(aux1,downf)))
-      if(identical(new.downf,downf)) flag <- 1
-      downf <- new.downf
-      le <- length(downf)
-    }
-   }
-   if(length(upf)==0) upf <- NULL
-   if(length(downf)==0) downf <- NULL   
-   list(upf=upf, downf=downf)
+  list(upf=upf, downf=downf)
 } 
+######################################################################
+check.downstream <- function(M, downf)
+{
+  ## After accounting for scanone, 85% of time is nbhd.size.
+  ## Of that, 85% (75% overall) is in check.downstream.
+
+  ## Check downstream to see if a cycle would be created.
+  tmpfn <- function(x) sum(x)
+  is.down <- apply(M[, downf, drop = FALSE], 1, tmpfn)
+  flag <- TRUE
+  while(flag){
+    aux1 <- which(is.down > 0)
+    if(flag <- length(aux1)) {
+      is.new <- aux1 %in% downf
+      flag <- !all(is.new)
+      if(flag) {
+        is.down <- apply(M[, aux1[!is.new], drop = FALSE], 1, tmpfn)
+        downf <- c(downf, aux1[!is.new])
+      }
+    }
+  }
+  downf
+}
 ######################################################################
 check.reversions <- function(M, node, max.parents = 3)
 {
@@ -315,74 +304,40 @@ check.reversions <- function(M, node, max.parents = 3)
   ## forbidden if cycles result.
   down <- which(M[,node] == 1)
   le <- length(down)
-  if(le == 0){
-    allowed <- NULL 
-    forbidden <- matrix( c( c(1:nrow(M))[-node],rep(node,nrow(M)-1)), 
-                        nrow(M)-1, 2, byrow=FALSE )
-  }
-  if(le == 1){
-    allowed <- matrix(c(down,node),1,2)
-    forbidden <- NULL
-  }
-  if(le > 1){
-    forbidden <- matrix(NA,le,2)
-    for(k in 1:le){
-      tail <- down[k]
-      down1 <- down[-k]
-      flag <- 0
-      while(flag == 0){
-        aux1 <- c()
-        le <- length(down1)
-        for(i in 1:le){
-          aux1 <- c(aux1,which(M[,down1[i]] == 1))
-          aux1 <- unique(aux1)
-        }
-        new.down1 <- sort(unique(c(aux1,down1)))
-        if(identical(new.down1,down1)) flag <- 1
-        down1 <- new.down1
-      }
-      if(!is.na(match(tail,down1))) 
-        forbidden[k,] <- c(tail,node)
-    }  
-    forbidden <- na.omit(forbidden)
-    attr(forbidden,"na.action") <- NULL
-    aux2 <- match(forbidden[,1],down)
-    if(length(aux2) > 0){
-      allowed <- matrix(c(down[-aux2], rep(node,length(down[-aux2]))),
-                        length(down[-aux2]),2,byrow=FALSE)
-    }
-    else{
-      allowed <- matrix(c(down, rep(node,length(down))),
-                        length(down),2,byrow=FALSE)
-      forbidden <- NULL
-    }
-  }
+
+  allowed <- forbidden <- NULL
   
-  ## Final check of max.parents.
-  wh <- which(apply(M[, allowed[,1], drop = FALSE], 2, sum) >= max.parents)
-  if(length(wh)) {
-    ## Move pairs from allowed to forbidden.
-    forbidden <- rbind(forbidden, allowed[wh,])
-    allowed <- allowed[-wh,, drop = FALSE]
-    if(nrow(allowed) == 0)
-      allowed <- NULL
+  if(le == 0)
+    forbidden <- cbind(seq(nrow(M))[-node], node)
+  else {
+    if(le == 1)
+      allowed <- cbind(down, node)
+    else { ## le > 1
+      ## Multiple colliders.
+      forbid.down <- rep(FALSE, le)
+      for(k in 1:le)
+        forbid.down[k] <- down[k] %in% check.downstream(M, down[-k])
+      if(any(forbid.down)){
+        if(any(!forbid.down))
+          allowed <- cbind(down[!forbid.down], node)
+        forbidden <- cbind(down[forbid.down], node)
+      }
+      else
+        allowed <- cbind(down, node)
+    }
+
+    if(!is.null(allowed)) {
+      ## Final check of max.parents.
+      wh <- which(apply(M[, allowed[,1], drop = FALSE], 2, sum) >= max.parents)
+      if(length(wh)) {
+        ## Move pairs from allowed to forbidden.
+        forbidden <- rbind(forbidden, allowed[wh,])
+        allowed <- allowed[-wh,, drop = FALSE]
+        if(nrow(allowed) == 0)
+          allowed <- NULL
+      }
+    }
   }
     
-  list(allowed=allowed, forbidden=forbidden)   
-}
-######################################################################
-find.pheno.names <- function(cross, pheno.col)
-{
-  if(!is.null(pheno.col)) {
-    if(is.list(pheno.col)) {
-      for(i in seq(length(pheno.col)))
-        if(!is.character(pheno.col[[i]]))
-          pheno.col[[i]] <- names(cross$pheno)[pheno.col[[i]]]
-    }
-    else {
-      if(!is.character(pheno.col))
-        pheno.col <- names(cross$pheno)[pheno.col]
-    }
-  }
-  pheno.col
+  list(allowed = allowed, forbidden = forbidden)   
 }

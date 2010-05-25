@@ -1,5 +1,5 @@
 Package: qtlnet
-Version: 0.6.1
+Version: 0.7.0
 Date: 2010-05-20
 Author: Elias Chaibub Neto <echaibub@hotmail.com>
 Title: Causal Inference of QTL Networks
@@ -10,4 +10,4 @@ LazyLoad: yes
 LazyData: yes
 License: GPL (>= 2)
 URL: http://www.stat.wisc.edu/~yandell/sysgen
-Packaged: 2010-05-20 15:19:29 UTC; yandell
+Packaged: 2010-05-20 20:35:01 UTC; yandell
