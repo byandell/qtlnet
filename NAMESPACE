@@ -14,6 +14,8 @@
 #
 
 export(graph.qtlnet)
+export(igraph.qtlnet)
+export(Rgraphviz.qtlnet)
 export(loci.qtlnet)
 export(mcmc.qtlnet)
 

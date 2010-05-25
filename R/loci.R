@@ -1,4 +1,4 @@
-loci.qtlnet <- function(qtlnet.object, chr.pos=FALSE, ...)
+loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, ...)
 {
   cross <- qtlnet.object$cross
   ## Make sure cross object has genotype probabilities.

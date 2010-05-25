@@ -1,13 +1,13 @@
-\name{graph.qtlnet}
+\name{igraph.qtlnet}
+\alias{igraph.qtlnet}
 \alias{graph.qtlnet}
 \alias{plot.qtlnet}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{plot using Rgraphviz}
+\title{qtlnet plot using igraph}
 \description{
-Plot inferred causal network
+Plot inferred causal network using igraph package.
 }
 \usage{
-graph.qtlnet(x, edges, loci.list,
+igraph.qtlnet(x, edges, loci.list,
   pheno.color = "green", qtl.color = "red", vertex.color,
   include.qtl = TRUE, \dots)
 \method{plot}{qtlnet}(x, \dots)
@@ -42,7 +42,8 @@ Additional arguments passed to called routines.
 }
 \details{
 Uses the igraph package to create graph objects. These can be exported
-to a variety of other modern graphics packages.
+to a variety of other modern graphics packages. \code{graph.qtlnet} is
+synonymous with \code{igraph.qtlnet}.
 }
 \value{
   Object of class \code{\link[igraph]{igraph}}.
@@ -65,7 +66,7 @@ Ann Appl Statist 4: 320-339.
   \code{\link[igraph]{tkplot}}
 }
 \examples{
-Pscdbp.graph <- graph.qtlnet(Pscdbp.qtlnet)
+Pscdbp.graph <- igraph.qtlnet(Pscdbp.qtlnet)
 Pscdbp.graph
 \dontrun{
 tkplot(Pscdbp.graph)

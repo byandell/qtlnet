@@ -6,9 +6,10 @@ plot.qtlnet <- function(x, ...)
   invisible(gr)
 }
 ###################################################################
+graph.qtlnet <- function(x, ...) igraph.qtlnet(x, ...)
+###################################################################
 ## This creates object of class igraph.
-## Is there a more general format?
-graph.qtlnet <- function(x,
+igraph.qtlnet <- function(x,
                          edges = summary(x, ...)$averaged.net,
                          loci.list = loci.qtlnet(x, ...),
                          pheno.color="green", qtl.color="red",
@@ -42,8 +43,33 @@ graph.qtlnet <- function(x,
 
   ## Set up vertices
   vertex.color <- array(vertex.color, length(node.names))
-  vertices <- data.frame(name = node.names, label = node.names, color = vertex.color)
+  vertices <- data.frame(name = node.names, label = node.names,
+                         color = vertex.color)
 
   ## Great graph object (library igraph).
+  igraph.par("print.graph.attributes", TRUE)
+  igraph.par("print.vertex.attributes", TRUE)
+  igraph.par("print.edge.attributes", TRUE)
   graph.data.frame(edges, TRUE, vertices = vertices)
+}
+##################################################################
+## Following routines are highly dependent on how igraph objects are structured.
+##################################################################
+get.graph.vertices <- function(graph)
+{
+  attr <- list.vertex.attributes(graph)
+  out <- list()
+  for(i in attr)
+    out[[i]] <- get.vertex.attribute(graph, i)
+  data.frame(out)
+}
+############################################################
+get.graph.edges <- function(graph)
+{
+  attr <- list.edge.attributes(graph)
+  out <- as.data.frame(get.edgelist(graph))
+  names(out) <- c("cause","effect")
+  for(i in attr)
+    out[[i]] <- get.edge.attribute(graph, i)
+  out
 }

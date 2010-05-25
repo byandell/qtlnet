@@ -7,7 +7,7 @@ Determines QTL that affect each phenotype conditional on the model-averaged
 network and on covariates.
 }
 \usage{
-loci.qtlnet(qtlnet.object, chr.pos = FALSE, \dots)
+loci.qtlnet(qtlnet.object, chr.pos = TRUE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
