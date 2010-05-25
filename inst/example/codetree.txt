@@ -1,0 +1,35 @@
+## MCMC across DAGs (metropolis.2)
+qtlnet.mcmc
+   create.save.score.matrix
+   neighborhood.size
+      forbidden.additions
+      check.reversions
+   propose.new.structure
+      forbidden.additions
+      check.reversions
+   score.model
+      node.parents
+      hk.design.matrix
+      *myformula
+      *create.cov.matrix
+
+## model averaging for individual edges (model.averaging)
+qtlnet.average
+   get.posterior.prob
+
+## summary of model average network (averaged.net)
+summary.qtlnet
+   M.2.lista
+   averaged.posterior.table
+
+## QTL architecture per node as list (pheno.net.str.qtl)
+qtlnet.pheno
+   *create.cov.matrix
+   get.parents
+
+## plot using Rgraphviz (plot.network.3)
+plot.qtlnet
+
+## Internal routines used in several places.
+create.cov.matrix
+myformula

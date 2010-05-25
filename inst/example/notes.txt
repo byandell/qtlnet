@@ -1,0 +1,20 @@
+The key functions are:
+   metropolis.2   MCMC across DAGs
+   model.averaging   model averaging for individual edges
+   averaged.net   summary of model average network
+   pheno.net.str.qtl   QTL architecture per node as list
+   plot.network.3   plot using Rgraphviz
+
+Here are some hints into the code:
+score.model:
+      ## Drop these and references to them if you don't have QTLs
+      scan <- scanone(cross, pheno.col=i, addcov=aux.addcov,
+        intcov=intcovM.dat, method="hk")
+      ss <- summary(scan,thr=thr[[i]])
+      markers <- row.names(ss)
+
+myformula:
+## rebuild this as you need.
+## Code is built around QTLs (Qnames)
+## addcov can be factor or numeric
+
