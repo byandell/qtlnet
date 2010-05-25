@@ -10,8 +10,8 @@
 }
 \usage{
 mcmc.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
-  nSamples = 1000, thinning = 1, M0, burning = TRUE, method = "hk",
-  random.seed = NULL, verbose = FALSE)
+  nSamples = 1000, thinning = 1, max.parents = 3,
+  M0, burning = TRUE, method = "hk", random.seed = NULL, verbose = FALSE)
 data(newcross.mcmc)
 data(newcross)
 }
@@ -41,6 +41,10 @@ Number of samples to record.
 }
   \item{thinning}{
 Thinning rate. Number of MCMC samples is \code{nSamples*thinning}.
+}
+  \item{max.parents}{
+Maximum number of parents to a node. This reduces the complexity of
+graphs and shortens run time. Probably best to consider values of 2 or 3.
 }
   \item{M0}{
 Matrix of 0s and 1s with initial directed graph of row->col if (row,col)

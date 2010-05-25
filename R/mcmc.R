@@ -2,6 +2,7 @@
 mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         addcov=NULL, intcov=NULL,
                         nSamples = 1000, thinning=1,
+                        max.parents = 3,
                         M0 = matrix(0, le.pheno, le.pheno),
                         burnin = 0.1, method = "hk", random.seed = NULL,
                         verbose = FALSE)
@@ -80,14 +81,15 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   post.model <- rep(NA,nSamples)
   all.bic <- rep(NA,nSamples)
   
-  saved.scores <- list()
-  for(i in 1:le.pheno){
-    saved.scores[[i]] <- create.saved.score(node=pheno.col[i], node.nms=pheno.col)
-  }
-  names(saved.scores) <- pheno.names
+##  saved.scores <- list()
+##  for(i in 1:le.pheno){
+##    saved.scores[[i]] <- create.saved.score(node=pheno.col[i], node.nms=pheno.col)
+##  }
+##  names(saved.scores) <- pheno.names
+  saved.scores <- make.saved.scores(pheno.names, max.parents)
         
   M.old <- M0
-  ne.old <- nbhd.size(M=M.old)[[1]]
+  ne.old <- nbhd.size(M.old, max.parents)[[1]]
   aux.old <- score.model(M=M.old, saved.scores=saved.scores, cross=cross,
                          addcov=addcov, intcov=intcov, thr=threshold, method = method,
                          verbose = TRUE)
@@ -103,8 +105,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   k <- 2
   aux.thin <- c(1:nSamples)*thinning
   for(i in 2:(nSamples*thinning)){
-    M.new <- propose.new.structure(M0=M.old)
-    ne.new <- nbhd.size(M=M.new)[[1]]
+    M.new <- propose.new.structure(M.old, max.parents)
+    ne.new <- nbhd.size(M=M.new, max.parents = max.parents)[[1]]
     aux.new <- score.model(M=M.new, saved.scores=saved.scores, cross=cross,
                            addcov=addcov, intcov=intcov, thr=threshold, method = method,
                            verbose = verbose)
@@ -135,7 +137,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
         k <- k + 1
       }
     }
-    if(verbose) print(c(i,k-1)) 
+    if(verbose & i == aux.thin[k-1]) print(c(i,k-1)) 
   }           
   out <- list(post.model=post.model,
               post.bic=post.bic, 
@@ -167,27 +169,25 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   out
 }
 ######################################################################
-create.saved.score <- function(node,node.nms)
+make.saved.scores <- function(pheno.names, max.parents = 3)
 {
-  n <- length(node.nms)
-  out <- nms <- rep(NA, 2^(n-1))
-  nms[1] <- node
-  condset <- node.nms[-which(node.nms == node)]
-  le <- length(condset)
-  k <- 2  
-  for(i in 1:le){
-    aux <- combn(x=condset,m=i)
-    n.comb <- ncol(aux)
-    for(j in 1:n.comb){
-      nms[k] <- paste(node, paste(aux[,j],collapse=","), sep="|")
-      k <- k + 1 
-    }
+  le.pheno <- length(pheno.names)
+  n.other <- le.pheno - 1
+  max.parents <- max(1, min(max.parents, le.pheno))
+
+  ## Create possible patterns. Must be a faster way to do this, but so what.
+  patterns <- 0
+  for(i in seq(1, max.parents)) {
+    patterns <- c(patterns, apply(10 ^ (combn(n.other, i) - 1), 2, sum))
   }
-  names(out) <- nms
-  out
-} 
+
+  saved.scores <- matrix(NA, length(patterns), le.pheno)
+  dimnames(saved.scores) <- list(as.character(patterns), pheno.names)
+  
+  saved.scores
+}
 ######################################################################
-propose.new.structure <- function(M0)
+propose.new.structure <- function(M0, max.parents = 3)
 {
   M <- M0
   le.nodes <- ncol(M0)
@@ -196,7 +196,7 @@ propose.new.structure <- function(M0)
     node <- sample(c(1:le.nodes),1)
     move <- sample(c("add","delete","reverse"),1)
     if(move == "add"){
-      aux1 <- forbidden.additions(M=M0,node=node)
+      aux1 <- forbidden.additions(M0, node, max.parents)
       if(!is.null(c(aux1$upf,aux1$downf))){
         aux2 <- match(sort(c(aux1$upf,aux1$downf)),c(1:le.nodes))
         aux3 <- c(1:le.nodes)[-c(aux2,node)]
@@ -204,18 +204,24 @@ propose.new.structure <- function(M0)
       else{
         aux3 <- c(1:le.nodes)[-node]
       }
+      if(length(aux3)) {
+        ## Check if any of aux3 is at or above max.parents.
+        wh <- which(apply(M0[, aux3, drop = FALSE], 2, sum) >= max.parents)
+        if(length(wh))
+          aux3 <- aux3[-wh]
+      }
       if(length(aux3) == 1){
         M[node,aux3] <- 1
         flag <- 1
       } 
-      if(length(aux3) > 1){
+      else if(length(aux3) > 1){
         head <- sample(aux3,1)
         M[node,head] <- 1
         flag <- 1
       }
     }
     if(move == "reverse"){
-      aux1 <- check.reversions(M=M0,node=node)$allowed
+      aux1 <- check.reversions(M0, node, max.parents)$allowed
       if(!is.null(aux1)){
         le.rev <- nrow(aux1)
         aux2 <- sample(c(1:le.rev),1)
@@ -237,20 +243,24 @@ propose.new.structure <- function(M0)
         flag <- 1
       }
     }
-  } 
+  }
+  ## This should not happen.
+  if(any(apply(M, 2, sum) > max.parents))
+    browser()
+  
   M
 }
 ######################################################################
-nbhd.size <- function(M)
+nbhd.size <- function(M, max.parents = 3)
 {
   n.deletions <- sum(M)
   n.additions <- 0 
   n.reversions <- 0 
   le <- ncol(M)
   for(j in 1:le){
-        add.forbid <- forbidden.additions(M=M,node=j)
+        add.forbid <- forbidden.additions(M, j, max.parents)
         n.additions <- n.additions + (le - 1 - length(c(add.forbid$upf, add.forbid$downf)))
-        rev.allow <- check.reversions(M=M,node=j)$allowed
+        rev.allow <- check.reversions(M, j, max.parents)$allowed
         if(!is.null(rev.allow))
           n.reversions <- n.reversions + nrow( rev.allow )
   }
@@ -262,10 +272,20 @@ nbhd.size <- function(M)
 }
 ######################################################################
 ######################################################################
-forbidden.additions <- function(M,node)
+forbidden.additions <- function(M, node, max.parents = 3)
 {
+  ## upf are forbidden upstream nodes (already present downstream).
+  ## downf are forbidden downstream nodes (already present upstream).
+  ## Check on cycles is one step. See check.reversions() for longer cycles.
+  
   upf <- which(M[node,] == 1)
   downf <- which(M[,node] == 1)
+  le <- length(downf)
+
+  ## If at least max.parents are causal for node, forbid any more.
+  if(le >= max.parents)
+    downf <- seq(nrow(M))[-node]
+  
   le <- length(downf)
   if(le > 0){  
     flag <- 0
@@ -286,8 +306,11 @@ forbidden.additions <- function(M,node)
    list(upf=upf, downf=downf)
 } 
 ######################################################################
-check.reversions <- function(M,node)
+check.reversions <- function(M, node, max.parents = 3)
 {
+  ## Check on possible reversals of directions.
+  ## allowed if no cycles produced.
+  ## forbidden if cycles result.
   down <- which(M[,node] == 1)
   le <- length(down)
   if(le == 0){
@@ -331,37 +354,19 @@ check.reversions <- function(M,node)
                         length(down),2,byrow=FALSE)
       forbidden <- NULL
     }
-  } 
+  }
+  
+  ## Final check of max.parents.
+  wh <- which(apply(M[, allowed[,1], drop = FALSE], 2, sum) >= max.parents)
+  if(length(wh)) {
+    ## Move pairs from allowed to forbidden.
+    forbidden <- rbind(forbidden, allowed[wh,])
+    allowed <- allowed[-wh,, drop = FALSE]
+    if(nrow(allowed) == 0)
+      allowed <- NULL
+  }
+    
   list(allowed=allowed, forbidden=forbidden)   
-}
-######################################################################
-node.parents <- function(M, node, node.nms)
-{
-  aux <- which(M[,node] == 1)
-  if(length(aux) == 0){ 
-    parents <- NULL
-    identifier <- as.character(node)
-  }
-  else{
-    parents <- aux
-    identifier <- paste(node,paste(parents,collapse=","),sep="|")
-  }
-  list(parents=parents, identifier=identifier)
-}
-######################################################################
-hk.design.matrix <- function(qtlo, cross.type="f2")
-{
-  nr <- nrow(qtlo$prob[[1]])
-  ng <- length(qtlo$prob)
-  if(cross.type == "f2"){
-    tmp <- unlist(lapply(qtlo$prob, function(x) cbind(x[,1]-x[,3],x[,2])))
-    hkm <- matrix(tmp,nr,2*ng)
-  }
-  if(cross.type == "bc"){
-    tmp <- unlist(lapply(qtlo$prob, function(x) x[,1]-x[,2]))
-    hkm <- matrix(tmp,nr,ng)
-  }
-  cbind(rep(1,nr),hkm)
 }
 ######################################################################
 find.pheno.names <- function(cross, pheno.col)

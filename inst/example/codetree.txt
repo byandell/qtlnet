@@ -10,6 +10,7 @@ mcmc.qtlnet
    score.model
       node.parents
       hk.design.matrix
+      set.dat.form
       *myformula
       *create.cov.matrix
    qtlnet.average (model.averaging)

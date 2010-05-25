@@ -6,11 +6,17 @@ score.model <- function(M, saved.scores, cross, addcov, intcov, thr, method = "h
   mod.score <- 0
   mymodel <- rep(NA,le)
   count.score <- 0
+  saved.patterns <- dimnames(saved.scores)[[1]]
   for(i in 1:le){
-    pheno <- node.parents(M = M, node = i)
+    pheno <- node.parents(M, i)
     mymodel[i] <- paste("(",paste(pheno$identifier,")",sep=""),sep="")
-    score.pointer <- match(pheno$identifier, names(saved.scores[[i]]))
-    aux.score <- saved.scores[[i]][score.pointer]
+    score.pointer <- match(pheno$code, saved.patterns)
+    if(is.na(score.pointer)) {
+      ## This should not happen.
+      cat(score.pointer,i, pheno$code, "\n")
+      browser()
+    }
+    aux.score <- saved.scores[score.pointer, i]
     if(is.na(aux.score)){
       ## Phenotype i is response.
       y <- cross$pheno[,i]
@@ -34,7 +40,7 @@ score.model <- function(M, saved.scores, cross, addcov, intcov, thr, method = "h
       ## This is the big time commitment.
       count.score <- count.score + 1
       if(verbose) {
-        if(count.score == 1) cat("scan ")
+        if(count.score == 1) cat("\nscan ")
         cat(mymodel[i], "")
       }
       scan <- scanone(cross, pheno.col=i, addcov=addcovM.dat, intcov=intcovM.dat,
@@ -68,7 +74,7 @@ score.model <- function(M, saved.scores, cross, addcov, intcov, thr, method = "h
       fm <- lm(form, dat)
 
       ## Update saved scores.
-      aux.score <- saved.scores[[i]][score.pointer] <- AIC(fm,k=log(length(y)))[1]
+      aux.score <- saved.scores[score.pointer, i] <- AIC(fm,k=log(length(y)))[1]
     }
     ## Accumulate model score.
     mod.score <- mod.score + aux.score
@@ -99,4 +105,34 @@ set.dat.form <- function(y, covM.dat=NULL, addcov.dat=NULL, intcov.dat=NULL,
                     le.markers)
 
   list(dat = dat, form = form)
+}
+######################################################################
+node.parents <- function(M, node)
+{
+  aux <- which(M[,node] == 1)
+  if(length(aux) == 0){ 
+    parents <- NULL
+    identifier <- as.character(node)
+  }
+  else{
+    parents <- aux
+    identifier <- paste(node,paste(parents,collapse=","),sep="|")
+  }
+  code <- sum(M[-node, node] * 10 ^ seq(0, nrow(M) - 2))
+  list(parents=parents, identifier=identifier, code = code)
+}
+######################################################################
+hk.design.matrix <- function(qtlo, cross.type="f2")
+{
+  nr <- nrow(qtlo$prob[[1]])
+  ng <- length(qtlo$prob)
+  if(cross.type == "f2"){
+    tmp <- unlist(lapply(qtlo$prob, function(x) cbind(x[,1]-x[,3],x[,2])))
+    hkm <- matrix(tmp,nr,2*ng)
+  }
+  if(cross.type == "bc"){
+    tmp <- unlist(lapply(qtlo$prob, function(x) x[,1]-x[,2]))
+    hkm <- matrix(tmp,nr,ng)
+  }
+  cbind(rep(1,nr),hkm)
 }
