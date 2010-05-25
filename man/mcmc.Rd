@@ -1,15 +1,16 @@
 \name{mcmc.qtlnet}
 \alias{qtlnet}
 \alias{mcmc.qtlnet}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{MCMC across DAGs}
+\title{Sample genetic architecture and QTL network}
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Use MCMC to alternatively sample genetic architecture and QTL network as
+directed acyclic graphs (DAGs).
 }
 \usage{
 mcmc.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
-  nSamples = 1000, thinning = 1, max.parents = 3,
-  M0, burning = TRUE, method = "hk", random.seed = NULL, verbose = FALSE)
+  nSamples = 1000, thinning = 1, max.parents = 3, scan.parents,
+  M0, burnin = 0.1, method = "hk", random.seed = NULL,
+  verbose = FALSE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -40,7 +41,11 @@ Thinning rate. Number of MCMC samples is \code{nSamples*thinning}.
 }
   \item{max.parents}{
 Maximum number of parents to a node. This reduces the complexity of
-graphs and shortens run time. Probably best to consider values of 2 or 3.
+graphs and shortens run time. Probably best to consider values of 3-5.
+}
+\item{scan.parents}{
+  Run Scan on all nodes with at most \code{scan.parents} number of
+  parents. See details.
 }
   \item{M0}{
 Matrix of 0s and 1s with initial directed graph of row->col if (row,col)
@@ -61,10 +66,23 @@ Model fitting method for \code{\link[qtl]{scanone}}.
   \item{verbose}{
 Print iteration and number of models fit.
   }
+  \item{\dots}{
+Additional arguments. Advanced users may want to supply pre-computed
+\code{saved.scores} to speed up calculations.
+  }
 }
 \details{
   Models are coded compactly as \code{(1)(2|1)(3|1,2,4,5)(4|2)(5|2)}. Each
-  parenthetical entry is a of form \code{(node|parents)}.
+  parenthetical entry is a of form \code{(node|parents)}; these each
+  require a model fit, for now with \code{\link[qtl]{scanone}}.
+
+  The \code{\link[qtl]{scanone}} routine is run on multiple
+  phenotypes in the network that could all have the same parents. For
+  instance, for 5 phenotypes, if \code{(1|2,4)} is sampled, then do
+  scanone of this model as well as \code{(3|2,4)} and \code{(5|2,4)}.
+  Setting \code{scan.parents} to \code{length(pheno.col) - 1} removes
+  restriction (default); any value less than one disallows multiple
+  trait scanning.
   }
 \value{
   List of class \code{qtlnet}
@@ -100,9 +118,8 @@ Chaibub Neto E, Keller MP, Attie AD, Yandell BS (2010)
 Causal Graphical Models in Systems Genetics: a unified
 framework for joint inference of causal network and
 genetic architecture for correlated phenotypes.
-Ann Appl Statist 3: 000-000.
-TR 1146R, Department of Statistics, UW-Madison.
-\url{http://www.stat.wisc.edu/~yandell/doc/2010/92.AnnApplStat.pdf}
+Ann Appl Statist 4: 320-339.
+\url{http://dx.doi.org/10.1214/09-AOAS288}
 }
 \seealso{
   \code{\link[qtl]{read.cross}},  \code{\link[qtl]{scanone}},  \code{\link[base]{set.seed}}
@@ -116,5 +133,6 @@ data(Pscdbp)
                                random.seed = 92387475, verbose = TRUE)
   save(Pscdbp.qtlnet, file = "Pscdbp.qtlnet.RData", compress = TRUE)
 }
+data(Pscdbp.qtlnet)
 }
 \keyword{ ~kwd1 }

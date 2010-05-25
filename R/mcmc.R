@@ -2,7 +2,7 @@
 mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         addcov=NULL, intcov=NULL,
                         nSamples = 1000, thinning=1,
-                        max.parents = 3,
+                        max.parents = 3, scan.parents = le.pheno - 1,
                         M0 = matrix(0, le.pheno, le.pheno),
                         burnin = 0.1, method = "hk", random.seed = NULL,
                         verbose = FALSE, ...)
@@ -86,8 +86,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
         
   M.old <- M0
   ne.old <- nbhd.size(M.old, max.parents)[[1]]
-  aux.new <- score.model(M.old, saved.scores, cross,
-                         addcov, intcov, threshold, method, verbose)
+  aux.new <- score.model(M.old, saved.scores, cross, addcov, intcov,
+                         threshold, method, scan.parents, verbose)
   if(verbose) cat("\n")
   
   bic.old <- aux.new$model.score
@@ -109,8 +109,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   for(i in 2:(nSamples*thinning)){
     M.new <- propose.new.structure(M.old, max.parents)
     ne.new <- nbhd.size(M.new, max.parents)[[1]]
-    aux.new <- score.model(M.new, saved.scores, cross,
-                           addcov, intcov, threshold, method, verbose)
+    aux.new <- score.model(M.new, saved.scores, cross, addcov, intcov,
+                           threshold, method, scan.parents, verbose)
 
     ## Typically only a few update.scores.
     tmp <- aux.new$update.scores
@@ -121,6 +121,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
 
     bic.new <- aux.new$model.score
     model.new <- aux.new$model.name
+
+
     mr <- exp(-0.5*(bic.new - bic.old))*(ne.old/ne.new)
     if(runif(1) <= min(1,mr)){
       M.old <- M.new
@@ -144,7 +146,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
               post.bic=post.bic, 
               post.net.str=post.net.str, 
               freq.accept = cont.accept / (nSamples * thinning), 
-              saved.scores=saved.scores, 
+              saved.scores=saved.scores,
               all.bic=all.bic,
               cross = cross)
 

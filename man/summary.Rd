@@ -2,19 +2,25 @@
 \alias{print.qtlnet}
 \alias{summary.qtlnet}
 \alias{print.summary.qtlnet}
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{summary of model average network and posterior table}
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Print and summary methods for qtlnet objects.
 }
 \usage{
-\method{print}{qtlnet}(x, ...)
+\method{print}{qtlnet}(x, cutoff = 0.01, digits = 3, ...)
 \method{summary}{qtlnet}(object, ...)
 \method{print}{summary.qtlnet}(x, ...)
 }
 \arguments{
   \item{x,object}{
 Object of class \code{qtlnet}.
+}
+  \item{cutoff}{
+Frequency cutoff for model patterns to be displayed. Always shows at
+least the most common pattern.
+}
+  \item{digits}{
+Number of digits to display for posterior probabilities on directed edges.
 }
   \item{\dots}{
 Other arguments currently ignored.
@@ -28,8 +34,7 @@ Chaibub Neto E, Keller MP, Attie AD, Yandell BS (2010)
 Causal Graphical Models in Systems Genetics: a unified
 framework for joint inference of causal network and
 genetic architecture for correlated phenotypes.
-Ann Appl Statist 3: 000-000.
-TR 1146R, Department of Statistics, UW-Madison.
+Ann Appl Statist 4: 320-339.
 \url{http://www.stat.wisc.edu/~yandell/doc/2010/92.AnnApplStat.pdf}
 }
 \seealso{

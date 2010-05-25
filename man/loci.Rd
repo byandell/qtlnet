@@ -7,7 +7,7 @@ Determines QTL that affect each phenotype conditional on the model-averaged
 network and on covariates.
 }
 \usage{
-loci.qtlnet(qtlnet.object, chr.pos = FALSE)
+loci.qtlnet(qtlnet.object, chr.pos = FALSE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -16,6 +16,9 @@ Object of class \code{qtlnet}.
 }
   \item{chr.pos}{
 Include chromsome and position if \code{TRUE}.
+}
+  \item{\dots}{
+Additional unused arguments.
 }
 }
 \value{
@@ -31,8 +34,7 @@ Chaibub Neto E, Keller MP, Attie AD, Yandell BS (2010)
 Causal Graphical Models in Systems Genetics: a unified
 framework for joint inference of causal network and
 genetic architecture for correlated phenotypes.
-Ann Appl Statist 3: 000-000.
-TR 1146R, Department of Statistics, UW-Madison.
+Ann Appl Statist 4: 320-339.
 \url{http://www.stat.wisc.edu/~yandell/doc/2010/92.AnnApplStat.pdf}
 }
 \seealso{

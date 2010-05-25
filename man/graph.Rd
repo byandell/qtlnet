@@ -1,66 +1,51 @@
 \name{graph.qtlnet}
 \alias{graph.qtlnet}
+\alias{plot.qtlnet}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{plot using Rgraphviz}
 \description{
 Plot inferred causal network
 }
 \usage{
-graph.qtlnet(qtlnet.object, pheno.output, marker.list,
-  pheno.color = "yellow", qtl.color = "red", include.qtl = TRUE,
-  vertex.color, \dots)
+graph.qtlnet(x, edges, loci.list,
+  pheno.color = "green", qtl.color = "red", vertex.color,
+  include.qtl = TRUE, \dots)
+\method{plot}{qtlnet}(x, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{qtlnet.object}{
+  \item{x}{
 Object of class \code{qtlnet}.
 }
-  \item{pheno.output}{
-%%     ~~Describe \code{pheno.output} here~~
+  \item{edges}{
+Data frame with first two columns being \code{cause} and \code{effect}
+directed phenotype pairs. Typically determined as \code{averaged.net}
+element from call to \code{\link{summary.qtlnet}}.
 }
-  \item{marker.list}{
-%%     ~~Describe \code{marker.list} here~~
+  \item{loci.list}{
+List of character names of loci by phenotype. Typically determined by
+call to \code{\link{loci.qtlnet}}.
 }
-  \item{simple}{
-%%     ~~Describe \code{simple} here~~
+  \item{pheno.color,qtl.color}{
+Name of color to use for phenotypes and QTLs, respectively.
 }
-  \item{pheno.color}{
-%%     ~~Describe \code{pheno.color} here~~
-}
-  \item{qtl.color}{
-%%     ~~Describe \code{qtl.color} here~~
+  \item{vertex.color}{
+Vertex colors in order of pheno-pheno edged augmented by
+\code{loci.list}, by default determined by \code{pheno.color} and \code{qtl.color}.
 }
   \item{include.qtl}{
-%%     ~~Describe \code{include.qtl} here~~
-}
-  \item{thick}{
-%%     ~~Describe \code{thick} here~~
-}
-  \item{myfontsize}{
-%%     ~~Describe \code{myfontsize} here~~
-}
-  \item{mynodewidth}{
-%%     ~~Describe \code{mynodewidth} here~~
-}
-  \item{mynodeheight}{
-%%     ~~Describe \code{mynodeheight} here~~
-}
-  \item{plotstyle}{
-%%     ~~Describe \code{plotstyle} here~~
+Include QTL in graph if \code{TRUE} and \code{loci.list} is not \code{NULL}.
 }
   \item{\dots}{
-%%     ~~Describe \code{\dots} here~~
+Additional arguments passed to called routines.
 }
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
+Uses the igraph package to create graph objects. These can be exported
+to a variety of other modern graphics packages.
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  Object of class \code{\link[igraph]{igraph}}.
 }
 \author{
 Brian S. Yandell and Elias Chaibub Neto
@@ -70,11 +55,13 @@ Chaibub Neto E, Keller MP, Attie AD, Yandell BS (2010)
 Causal Graphical Models in Systems Genetics: a unified
 framework for joint inference of causal network and
 genetic architecture for correlated phenotypes.
-Ann Appl Statist 3: 000-000.
-TR 1146R, Department of Statistics, UW-Madison.
+Ann Appl Statist 4: 320-339.
 \url{http://www.stat.wisc.edu/~yandell/doc/2010/92.AnnApplStat.pdf}
 }
 \seealso{
+  \code{\link{summary.qtlnet}},
+  \code{\link{loci.qtlnet}},
+  \code{\link[igraph]{graph.data.frame}},
   \code{\link[igraph]{tkplot}}
 }
 \examples{

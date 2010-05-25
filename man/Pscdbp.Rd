@@ -27,9 +27,18 @@ Brozell A, Schadt EE, Drake TA, Lusis AJ, Horvath S (2006) Integrating
 genetic and network analysis to characterize genes related to mouse
 weight. PLoS Genetics 2: e130-NA.
 \url{http://dx.doi.org/10.1371/journal.pgen.0020130}
+
+Chaibub Neto E, Keller MP, Attie AD, Yandell BS (2010)
+Causal Graphical Models in Systems Genetics: a unified
+framework for joint inference of causal network and
+genetic architecture for correlated phenotypes.
+Ann Appl Statist 4: 320-339.
+\url{http://dx.doi.org/10.1214/09-AOAS288}
 }
 \examples{
-data(Pscdbp)
 summary(Pscdbp)
+\dontrun{
+summary(Pscdbp.qtlnet)
+}
 }
 \keyword{datasets}

@@ -1,0 +1,36 @@
+###########################################################################
+# Shared object library load directives.
+#
+# Shared object library does not need to be called in the .onLoad function in
+# zzz.r.
+#
+
+# useDynLib(qtlnet)
+
+############################################################################
+# Export directives.  These directives export functions.  S3 methods for
+# classes declared in the package should be declared with the "S3method"
+# directive.
+#
+
+export(graph.qtlnet)
+export(loci.qtlnet)
+export(mcmc.qtlnet)
+
+
+## The following have S3 methods:
+export(plot.qtlnet)
+export(print.qtlnet)
+export(summary.qtlnet)
+export(print.summary.qtlnet)
+
+
+##############################################################################
+# S3method declarations.  These will allow generic methods to function properly
+# with functions such as "plot.qb" declared in the package.
+#
+
+S3method(plot, qtlnet)
+S3method(print, qtlnet)
+S3method(summary, qtlnet)
+S3method(print, summary.qtlnet)
