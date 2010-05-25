@@ -1,14 +1,22 @@
-qtlnet.pheno <- function(qtlnet.object,
-                         cross, 
-                         chr.pos=FALSE,
-                         pheno.net.str = summary(qtlnet.object)$averaged.net, 
-                         pheno.nms = attr(qtlnet.object, "pheno.names"), 
-                         addcov = attr(qtlnet.object, "addcov"), 
-                         intcov = attr(qtlnet.object, "intcov"), 
-                         thr = attr(qtlnet.object, "threshold"),
-                         method = attr(qtlnet.object, "method"))
+loci.qtlnet <- function(qtlnet.object,
+                         chr.pos=FALSE)
 {
-  ## Warnings generated: X'X matrix is singular.
+  cross <- qtlnet.object$cross
+  ## Make sure cross object has genotype probabilities.
+  if (!("prob" %in% names(cross$geno[[1]]))) {
+      warning("First running calc.genoprob.")
+    cross <- calc.genoprob(cross)
+  }
+
+  pheno.net.str <- summary(qtlnet.object)$averaged.net
+
+  ## Extract needed attributes from qtlnet.object.
+  pheno.nms <- attr(qtlnet.object, "pheno.names")
+  addcov <- attr(qtlnet.object, "addcov") 
+  intcov <- attr(qtlnet.object, "intcov") 
+  thr <- attr(qtlnet.object, "threshold")
+  method <- attr(qtlnet.object, "method")
+
   le <- length(pheno.nms)
   QTLnodes <- list()
   for(i in 1:le){

@@ -1,15 +1,20 @@
-\name{plot.qtlnet}
-\alias{plot.qtlnet}
+\name{graph.qtlnet}
+\alias{graph.qtlnet}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{plot using Rgraphviz}
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Plot inferred causal network
 }
 \usage{
-plot.qtlnet(pheno.output, marker.list, simple = FALSE, pheno.color = "yellow", qtl.color = "red", include.qtl = TRUE, thick = 3, myfontsize, mynodewidth, mynodeheight, plotstyle = "dot", ...)
+graph.qtlnet(qtlnet.object, pheno.output, marker.list,
+  pheno.color = "yellow", qtl.color = "red", include.qtl = TRUE,
+  vertex.color, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
+  \item{qtlnet.object}{
+Object of class \code{qtlnet}.
+}
   \item{pheno.output}{
 %%     ~~Describe \code{pheno.output} here~~
 }
@@ -73,12 +78,10 @@ TR 1146R, Department of Statistics, UW-Madison.
   \code{\link[igraph]{tkplot}}
 }
 \examples{
-## Load object newcross with 5 traits.
-data(newcross)
-
-## Load MCMC samples created by qtlnet.mcmc.
-data(newcross.mcmc)
-
-plot.qtlnet(newcross.mcmc, newcross)
+newcross.graph <- graph.qtlnet(newcross.mcmc)
+newcross.graph
+\dontrun{
+tkplot(newcross.graph)
+}
 }
 \keyword{ ~kwd1 }

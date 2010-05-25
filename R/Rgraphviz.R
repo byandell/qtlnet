@@ -1,15 +1,16 @@
-graphviz.plot.qtlnet <- function(x, cross,
+## Can this be rewritten to use graph.qtlnet output?
+graphviz.plot.qtlnet <- function(qtlnet.object,
                                  pheno.output = summary(x)$averaged.net,
-                                 marker.list = qtlnet.pheno(x, cross, ...),
-                                 pheno.color="yellow", qtl.color="red",
+                                 marker.list = qtlnet.pheno(x, chr.pos),
+                                 pheno.color="green", qtl.color="red",
                                  include.qtl=TRUE,
                                  simple = FALSE,
-                                 thick=3, myfontsize=18, mynodewidth=3.0, mynodeheight1.0,
-                                 plotstyle="dot",
+                                 thick=3, myfontsize=18, mynodewidth=3.0,
+                                 mynodeheight1.0, plotstyle="dot",
                                  ...)
 {
   if(simple){
-    mygR <- create.directed.graph.object.graphviz(pheno.output)
+    mygR <- create.directed.graph.object(pheno.output)
     myattrs <- list(node=list(shape="ellipse"))
     return( plot(mygR, attrs = myattrs, ...) )
   }
@@ -21,7 +22,7 @@ graphviz.plot.qtlnet <- function(x, cross,
       qtl.output[,1] <- markers
       qtl.output[,2] <- rep(pheno.nms,times=unlist(lapply(marker.list,length)))
       names(qtl.output) <- c("node1","direction","node2","prob")
-      mygR <- graph.and.attributes.graphviz(pheno.output = pheno.output, 
+      mygR <- graph.and.attributes(pheno.output = pheno.output, 
                                             qtl.output = qtl.output,
                                             pheno.color = pheno.color,
                                             qtl.color = qtl.color,
@@ -31,7 +32,7 @@ graphviz.plot.qtlnet <- function(x, cross,
                                             mynodeheight = mynodeheight)
     }
     else{
-      mygR <- graph.and.attributes.graphviz(pheno.output = pheno.output, 
+      mygR <- graph.and.attributes(pheno.output = pheno.output, 
                                             qtl.output = NULL,
                                             pheno.color = pheno.color,
                                             qtl.color = qtl.color,
@@ -48,7 +49,7 @@ graphviz.plot.qtlnet <- function(x, cross,
 ################################################################
 ## Rgraphviz routines below.
 ################################################
-create.directed.graph.object.graphviz <- function(output)
+create.directed.graph.object <- function(output)
 {
   n.edges <- nrow(output)	
   auxDG <- data.frame(matrix(NA,n.edges,3))
@@ -72,7 +73,7 @@ create.directed.graph.object.graphviz <- function(output)
   new("graphNEL",nodes=mynodes,edgeL=edL,edgemode="directed")
 }
 ############################################################
-graph.and.attributes.graphviz <- function(pheno.output, qtl.output=NULL,
+graph.and.attributes <- function(pheno.output, qtl.output=NULL,
                                  pheno.color="transparent", qtl.color="transparent", 
                                  node.shape="ellipse", thick=3, myfontsize=1, mynodewidth, 
                                  mynodeheight)
@@ -83,7 +84,7 @@ graph.and.attributes.graphviz <- function(pheno.output, qtl.output=NULL,
     qtl.output[,4] <- 1
     pheno.output <- rbind(qtl.output,pheno.output) 
   }
-  gR <- create.directed.graph.object.graphviz(pheno.output)
+  gR <- create.directed.graph.object(pheno.output)
   n.edges <- length(pheno.output[,1])	
   auxDG <- data.frame(matrix(NA,n.edges,4))
   aux <- which(pheno.output[,2] == "---->")
