@@ -1,15 +1,13 @@
-qtlnet.average <- function(metroObject, burnin=FALSE)
+qtlnet.average <- function(metroObject, burnin = 0)
 {
   n <- length(metroObject[[1]])
-  if(burnin){
-    b <- floor(0.1*n)
-    nSamples <- n-b+1
-  }
-  if(!burnin){
+  if(burnin > 0)
+    b <- floor(burnin * n)
+  else
     b <- 1
-    nSamples <- n
-  }
-  pp <- get.posterior.prob(metroObject, burnin=burnin)
+  nSamples <- n - b + 1
+  
+  pp <- get.posterior.prob(metroObject, b, n)
   aux.pp <- rep(NA,nSamples)
   le <- nrow(pp)
   np <- ncol(metroObject[[3]][,,1])
@@ -41,17 +39,10 @@ qtlnet.average <- function(metroObject, burnin=FALSE)
   list(mav=mav,out=out,pp=pp)
 }
 ######################################################################
-get.posterior.prob <- function(metroObject,burnin=FALSE)
+get.posterior.prob <- function(metroObject, b, n)
 {
-  n <- length(metroObject[[1]])
-  if(burnin){
-    b <- floor(0.1*n)
-    nSamples <- n-b+1
-  }
-  if(!burnin){
-    b <- 1
-    nSamples <- n
-  }
+  nSamples <- n - b + 1
+
   sampled.models <- unique(metroObject[[1]][b:n])
   le <- length(sampled.models)
   post.prob <- data.frame(matrix(NA,le,2))

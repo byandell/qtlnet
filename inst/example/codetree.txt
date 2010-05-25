@@ -1,7 +1,7 @@
 ## MCMC across DAGs (metropolis.2)
-qtlnet.mcmc
+mcmc.qtlnet
    create.save.score.matrix
-   neighborhood.size
+   nbhd.size
       forbidden.additions
       check.reversions
    propose.new.structure
@@ -12,24 +12,90 @@ qtlnet.mcmc
       hk.design.matrix
       *myformula
       *create.cov.matrix
+   qtlnet.average (model.averaging)
+      get.posterior.prob
 
-## model averaging for individual edges (model.averaging)
-qtlnet.average
-   get.posterior.prob
-
-## summary of model average network (averaged.net)
+## Summary of model average network (averaged.net)
+print.qtlnet
 summary.qtlnet
    M.2.lista
    averaged.posterior.table
+print.summary.qtlnet
+
+## Create igraph object for plotting.
+graph.qtlnet
 
 ## QTL architecture per node as list (pheno.net.str.qtl)
-qtlnet.pheno
+loci.qtlnet
    *create.cov.matrix
    get.parents
-
-## plot using Rgraphviz (plot.network.3)
-plot.qtlnet
 
 ## Internal routines used in several places.
 create.cov.matrix
 myformula
+
+###########################################################
+## plot using Rgraphviz (plot.network.3)
+graphviz.plot.qtlnet
+###########################################################
+## Computation loops in mcmc.qtlnet
+
+nSamples <- 100
+thinning <- 10
+M = network model?
+le <- ncol(M)
+
+creat.save.score.matrix
+score.model
+for(i in 2:(nSamples*thinning)){
+   propose.new.structure
+      while(flag == 0){
+         ## Switch on move = add,reverse,delete
+         add: forbidden.additions
+         reverse: check.reversions
+      }
+   nbhd.size
+      for(j in 1:le){
+         forbidden.additions
+         check.reversions
+      }
+   score.model
+      for(i in 1:le){
+         node.parents
+         if(is.na(aux.score)){
+            3x: *create.cov.matrix
+            qtl/scanone
+            if(le.markers > 0){
+               hk.design.matrix
+               ## Switch on is.null covM.dat, addcov.dat, intcov.dat
+               ## This logic could be dramatically simplified.
+                  *myformula
+            }
+            else { ## le.markers == 0
+               ## Switch on is.null covM.dat, addcov.dat, intcov.dat
+               ## This logic could be dramatically simplified.
+                  *myformula
+            }
+            base/lm
+         }
+      }
+   ## M-H switch on runif(1)
+}
+#######################################################################
+Rprof() results
+                              total.time total.pct self.time self.pct
+"mcmc.qtlnet"                      33.82      99.8      0.06      0.2
+"propose.new.structure"             1.28       3.8      0.06      0.2
+"nbhd.size"                         8.76      25.9      0.08      0.2
+"score.model"                      23.58      69.6      0.22      0.6
+ "scanone"                         20.70      61.1      0.30      0.9
+
+"check.reversions"                  6.28      18.5      0.48      1.4
+"forbidden.additions"               3.34       9.9      0.36      1.1
+"myformula"                         0.02       0.1      0.00      0.0
+
+"sort"                              4.12      12.2      0.26      0.8
+
+none:
+hk.design.matrix
+create.cov.matrix

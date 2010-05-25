@@ -14,15 +14,11 @@ newcross <- calc.genoprob(newcross,step=1)
 
 summary(newcross)
 
-M <- matrix(0,5,5)
-
-thr <- vector(mode="list", length=5)
-thr[1:5] <- 3.83
-
+thr <- 3.83
 random.seed <- 92387475
 
 \dontrun{
-  newcross.mcmc <- qtlnet.mcmc(M0=M, cross=newcross, thr=thr, 
+  newcross.mcmc <- mcmc.qtlnet(M0=M, cross=newcross, thr=thr, 
                                addcov=NULL, intcov=NULL, nSamples=1000, thinning=20, 
                                pheno.col=c(1:5), random.seed = random.seed, verbose=TRUE)
   save(newcross.mcmc, file = "newcross.mcmc.RData", compress = TRUE)
@@ -41,7 +37,7 @@ print(newcross.mcmc)
 ## averaged.net and averaged.posterior.table
 summary(newcross.mcmc)
 
-pns.qtl <- qtlnet.pheno(newcross.mcmc, cross=newcross, chr.pos=TRUE)
+pns.qtl <- loci.qtlnet(newcross.mcmc)
 pns.qtl
 
 ##library(graph)
@@ -49,8 +45,8 @@ pns.qtl
 ## OR
 libary(igraph)
 
-plot.qtlnet(newcross.mcmc, newcross, marker.list = pns.qtl, simple = FALSE,
-            pheno.color="transparent", qtl.color="lightgrey", include.qtl=TRUE)
+plot.qtlnet(newcross.mcmc, loci.list = pns.qtl,
+            pheno.color="transparent", qtl.color="lightgrey")
 
 
 ## Plot BIC over MCMC samples.

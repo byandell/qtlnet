@@ -1,41 +1,79 @@
-pheno.stuff <- function(cross, pheno.col)
-{
-  ## I would like to see something like this in R/qtl.
-  if (is.character(pheno.col)) {
-    num <- find.pheno(cross, pheno.col)
-    if (any(is.na(num))) {
-      if (sum(is.na(num)) > 1) 
-        stop("Couldn't identify phenotypes ",
-             paste(paste("\"", pheno.col[is.na(num)], "\"", sep = ""), collapse = " "))
-      else stop("Couldn't identify phenotype \"", pheno.col[is.na(num)], "\"")
-    }
-    pheno.names <- pheno.col
-    pheno.col <- num
-  }
-  else {
-    if(is.logical(pheno.col))
-      pheno.col <- seq(ncol(cross$pheno))[pheno.col]
-    if(!is.numeric(pheno.col))
-      stop("Cannot interpret pheno.col:", pheno.col)
-    pheno.names <- names(cross$pheno)[pheno.col]
-  }
-  list(pheno.col = pheno.col, pheno.names = pheno.names)
-}
 ######################################################################
-qtlnet.mcmc <- function(M0, cross, thr, nSamples, thinning=1, pheno.col, addcov=NULL,
-                        intcov=NULL, burnin=TRUE, method = "hk", random.seed = NULL,
-                        verbose=FALSE)
+mcmc.qtlnet <- function(cross, pheno.col, threshold,
+                        addcov=NULL, intcov=NULL,
+                        nSamples = 1000, thinning=1,
+                        M0 = matrix(0, le.pheno, le.pheno),
+                        burnin = 0.1, method = "hk", random.seed = NULL,
+                        verbose = FALSE)
 {
+  le.pheno <- length(pheno.col)
+
+  ## Check input parameters.
+
+  ## LOD threshold by phenotype.
+  if(length(threshold) == 1)
+    threshold <- rep(threshold, le.pheno)
+  threshold <- as.list(threshold)
+  if(length(threshold) != le.pheno)
+    stop("threshold must have same length as pheno.col")
+
+  ## Random number generator seed.
   if(!is.null(random.seed)) {
     if(!is.numeric(random.seed))
       stop("random seed must be numeric")
     set.seed(random.seed)
   }
-    
-  tmp <- pheno.stuff(cross, pheno.col)
-  pheno.col <- tmp$pheno.col
-  pheno.names <- tmp$pheno.names
-  le.pheno <- length(pheno.col)
+
+  ## Burnin must be between 0 and 1.
+  if(is.logical(burnin)) {
+    if(burnin)
+      burnin <- 0.1
+    else
+      burnin <- 0
+  }
+  if(burnin < 0 | burnin > 1)
+    stop("burnin must be between 0 and 1")
+
+  ## Initial network matrix.
+  if(nrow(M0) != le.pheno | ncol(M0) != le.pheno)
+    paste("M0 must be square matrix the size of pheno.col")
+
+  ## Adjust phenotype and covariate names and columns.
+  ## Make sure addcov and intcov are NULL or lists.
+  pheno.names <- find.pheno.names(cross, pheno.col)
+  make.list <- function(x, namex, len) {
+    out <- x
+    if(!is.null(x)) {
+      if(is.list(x)) {
+        if(length(x) != len)
+          stop(paste(namex, "is list but not of same length as pheno.col"))
+      }
+      else {
+        out <- vector(mode="list", length = len)
+        for(i in seq(len))
+          out[[i]] <- x
+      }
+    }
+    out
+  }
+  addcov.names <- make.list(find.pheno.names(cross, addcov))
+  intcov.names <- make.list(find.pheno.names(cross, intcov))
+  cross$pheno <-
+    cross$pheno[, unique(c(pheno.names, unlist(addcov.names), unlist(intcov.names)))]
+  pheno.col <- find.pheno(cross, pheno.names)
+  if(!is.null(addcov))
+    for(i in seq(length(addcov)))
+        addcov[[i]] <- find.pheno(cross, addcov.names[[i]])
+  if(!is.null(intcov))
+    for(i in seq(length(intcov)))
+        intcov[[i]] <- find.pheno(cross, intcov.names[[i]])
+
+
+  ## Calculate genotype probabilities if not already done.
+  if (!("prob" %in% names(cross$geno[[1]]))) {
+    warning("First running calc.genoprob.")
+    cross <- calc.genoprob(cross)
+  }
   
   post.net.str <- array(dim=c(le.pheno,le.pheno,nSamples))
   post.bic <- rep(NA,nSamples)
@@ -44,14 +82,17 @@ qtlnet.mcmc <- function(M0, cross, thr, nSamples, thinning=1, pheno.col, addcov=
   
   saved.scores <- list()
   for(i in 1:le.pheno){
-    saved.scores[[i]] <- create.save.score.matrix(node=pheno.col[i], node.nms=pheno.col)
+    saved.scores[[i]] <- create.saved.score(node=pheno.col[i], node.nms=pheno.col)
   }
   names(saved.scores) <- pheno.names
         
   M.old <- M0
   ne.old <- nbhd.size(M=M.old)[[1]]
   aux.old <- score.model(M=M.old, saved.scores=saved.scores, cross=cross,
-                         addcov=addcov, intcov=intcov, thr=thr, method = method)
+                         addcov=addcov, intcov=intcov, thr=threshold, method = method,
+                         verbose = TRUE)
+  if(verbose) cat("\n")
+  
   bic.old <- aux.old[[1]]
   saved.scores <- aux.old[[2]]
   model.old <- aux.old[[3]]
@@ -65,7 +106,8 @@ qtlnet.mcmc <- function(M0, cross, thr, nSamples, thinning=1, pheno.col, addcov=
     M.new <- propose.new.structure(M0=M.old)
     ne.new <- nbhd.size(M=M.new)[[1]]
     aux.new <- score.model(M=M.new, saved.scores=saved.scores, cross=cross,
-                           addcov=addcov, intcov=intcov, thr=thr, method = method)
+                           addcov=addcov, intcov=intcov, thr=threshold, method = method,
+                           verbose = verbose)
     bic.new <- aux.new[[1]]
     if(i == aux.thin[k]) 
       all.bic[k] <- aux.new[[1]]
@@ -96,13 +138,16 @@ qtlnet.mcmc <- function(M0, cross, thr, nSamples, thinning=1, pheno.col, addcov=
     if(verbose) print(c(i,k-1)) 
   }           
   out <- list(post.model=post.model,
-       post.bic=post.bic, 
-       post.net.str=post.net.str, 
-       freq.accept=cont.accept/nSamples, 
-       saved.scores=saved.scores, 
-       all.bic=all.bic)
+              post.bic=post.bic, 
+              post.net.str=post.net.str, 
+              freq.accept=cont.accept/(nSamples*thinning), 
+              saved.scores=saved.scores, 
+              all.bic=all.bic,
+              cross = cross)
+
+  ## Attributes of qtlnet object.
   attr(out, "M0") <- M0
-  attr(out, "threshold") <- thr
+  attr(out, "threshold") <- threshold
   attr(out, "nSamples") <- nSamples
   attr(out, "thinning") <- thinning
   attr(out, "pheno.col") <- pheno.col
@@ -114,19 +159,18 @@ qtlnet.mcmc <- function(M0, cross, thr, nSamples, thinning=1, pheno.col, addcov=
   attr(out, "random.seed") <- random.seed
   attr(out, "random.kind") <- RNGkind()
 
+  ## Add model average calculation.
   out$model.average <- qtlnet.average(out, burnin = burnin)
 
-  ## Attributes of qtlnet object.
   class(out) <- c("qtlnet","list")
   
   out
 }
 ######################################################################
-create.save.score.matrix <- function(node,node.nms)
+create.saved.score <- function(node,node.nms)
 {
   n <- length(node.nms)
-  out <- matrix(NA, 2^(n-1), 1)
-  nms <- rep(NA, 2^(n-1))
+  out <- nms <- rep(NA, 2^(n-1))
   nms[1] <- node
   condset <- node.nms[-which(node.nms == node)]
   le <- length(condset)
@@ -139,29 +183,9 @@ create.save.score.matrix <- function(node,node.nms)
       k <- k + 1 
     }
   }
-  dimnames(out) <- list(nms, "score")
+  names(out) <- nms
   out
 } 
-######################################################################
-nbhd.size <- function(M)
-{
-  n.deletions <- sum(M)
-  n.additions <- 0 
-  n.reversions <- 0 
-  le <- ncol(M)
-  for(j in 1:le){
-        add.forbid <- forbidden.additions(M=M,node=j)
-        n.additions <- n.additions + (le - 1 - length(c(add.forbid$upf, add.forbid$downf)))
-        rev.allow <- check.reversions(M=M,node=j)$allowed
-        if(!is.null(rev.allow))
-          n.reversions <- n.reversions + nrow( rev.allow )
-  }
-  nbhd.size <- n.deletions + n.additions + n.reversions
-  list(nbhd.size=nbhd.size, 
-       n.deletions=n.deletions,
-       n.additions=n.additions, 
-       n.reversions=n.reversions)
-}
 ######################################################################
 propose.new.structure <- function(M0)
 {
@@ -217,125 +241,24 @@ propose.new.structure <- function(M0)
   M
 }
 ######################################################################
-score.model <- function(M, saved.scores, cross, addcov, intcov, thr, method = "hk")
+nbhd.size <- function(M)
 {
-  ## addcov, intcov, thr, are lists
+  n.deletions <- sum(M)
+  n.additions <- 0 
+  n.reversions <- 0 
   le <- ncol(M)
-  mod.score <- 0
-  mymodel <- rep(NA,le)
-  for(i in 1:le){
-    pheno <- node.parents(M=M,node=i)
-    mymodel[i] <- paste("(",paste(pheno$identifier,")",sep=""),sep="")
-    score.pointer <- match(pheno$identifier, dimnames(saved.scores[[i]])[[1]])
-    aux.score <- saved.scores[[i]][score.pointer,1]
-    if(is.na(aux.score)){
-      addcovM.dat <- create.cov.matrix(cross,cov.names=addcov[[i]])
-      intcovM.dat <- create.cov.matrix(cross,cov.names=intcov[[i]])
-      addintcovM.dat <- create.cov.matrix(cross,cov.names=unique(c(addcov[[i]],intcov[[i]])))
-      addcov.dat <- data.frame(cross$pheno[,addcov[[i]]])
-      names(addcov.dat) <- addcov[[i]]
-      intcov.dat <- data.frame(cross$pheno[,intcov[[i]]])
-      names(intcov.dat) <- intcov[[i]]      
-      addintcov.dat <- data.frame(cross$pheno[,unique(c(addcov[[i]],intcov[[i]]))])
-      names(addintcov.dat) <- unique(c(addcov[[i]],intcov[[i]]))      
-      y <- cross$pheno[,i]
-      covM.dat <- NULL
-      if(!is.null(pheno$parents)){
-        covM.dat <- data.frame(cross$pheno[,pheno$parents])
-        names(covM.dat) <- names(cross$pheno)[pheno$parents]
-      }
-      if(!is.null(covM.dat) & !is.null(addcovM.dat)) 
-        aux.addcov <- cbind(covM.dat,addcovM.dat)
-      if(!is.null(covM.dat) & is.null(addcovM.dat)) 
-        aux.addcov <- covM.dat
-      if(is.null(covM.dat) & !is.null(addcovM.dat)) 
-        aux.addcov <- addcovM.dat
-      if(is.null(covM.dat) & is.null(addcovM.dat)) 
-        aux.addcov <- NULL
-      scan <- scanone(cross, pheno.col=i, addcov=aux.addcov, intcov=intcovM.dat,
-                      method = method)
-      ss <- summary(scan,thr=thr[[i]])
-      markers <- row.names(ss)
-      le.markers <- length(markers)
-      if(le.markers > 0){ 
-        qtlo <- makeqtl(cross,chr=ss[,1],pos=ss[,2],what="prob")
-        geno.dat <- hk.design.matrix(qtlo=qtlo)[,-1]
-        dimnames(geno.dat)[[2]] <- as.vector(rbind(paste("add",1:le.markers,sep=""),
-          paste("dom",1:le.markers,sep="")))
-        if(!is.null(covM.dat) & !is.null(addcov.dat) & !is.null(intcov.dat)){
-          dat <- data.frame(y, covM.dat, addintcov.dat, geno.dat)
-          form <- myformula(addcov=c(names(covM.dat),addcov[[i]]), intcov=intcov[[i]], nQ=le.markers)
-        } 
-        if(!is.null(covM.dat) & !is.null(addcov.dat) & is.null(intcov.dat)){
-          dat <- data.frame(y, covM.dat, addcov.dat, geno.dat)
-          form <- myformula(addcov=c(names(covM.dat),addcov[[i]]), intcov=NULL, nQ=le.markers)
-        } 
-        if(!is.null(covM.dat) & is.null(addcov.dat) & !is.null(intcov.dat)){
-          dat <- data.frame(y, covM.dat, intcov.dat, geno.dat)
-          form <- myformula(addcov=names(covM.dat), intcov=intcov[[i]], nQ=le.markers)
-        } 
-        if(is.null(covM.dat) & !is.null(addcov.dat) & !is.null(intcov.dat)){
-          dat <- data.frame(y, addintcov.dat, geno.dat)
-          form <- myformula(addcov=addcov[[i]], intcov=intcov[[i]], nQ=le.markers)
-        } 
-        if(!is.null(covM.dat) & is.null(addcov.dat) & is.null(intcov.dat)){
-          dat <- data.frame(y, covM.dat, geno.dat)
-          form <- myformula(addcov=names(covM.dat), intcov=NULL, nQ=le.markers)
-        } 
-        if(is.null(covM.dat) & !is.null(addcov.dat) & is.null(intcov.dat)){
-          dat <- data.frame(y, addcov.dat, geno.dat)
-          form <- myformula(addcov=addcov[[i]], intcov=NULL, nQ=le.markers)
-        } 
-        if(is.null(covM.dat) & is.null(addcov.dat) & !is.null(intcov.dat)){
-          dat <- data.frame(y, intcov.dat, geno.dat)
-          form <- myformula(addcov=NULL, intcov=intcov[[i]], nQ=le.markers)
-        } 
-        if(is.null(covM.dat) & is.null(addcov.dat) & is.null(intcov.dat)){
-          dat <- data.frame(y, geno.dat)
-          form <- myformula(addcov=NULL, intcov=NULL, nQ=le.markers)
-        } 
-      }
-      else{
-        if(!is.null(covM.dat) & !is.null(addcov.dat) & !is.null(intcov.dat)){
-          dat <- data.frame(y, covM.dat, addintcov.dat)
-          form <- myformula(addcov=c(names(covM.dat),addcov[[i]]), intcov=intcov[[i]], nQ=0)
-        } 
-        if(!is.null(covM.dat) & !is.null(addcov.dat) & is.null(intcov.dat)){
-          dat <- data.frame(y, covM.dat, addcov.dat)
-          form <- myformula(addcov=c(names(covM.dat),addcov[[i]]), intcov=NULL, nQ=0)
-        } 
-        if(!is.null(covM.dat) & is.null(addcov.dat) & !is.null(intcov.dat)){
-          dat <- data.frame(y, covM.dat, intcov.dat)
-          form <- myformula(addcov=names(covM.dat), intcov=intcov[[i]], nQ=0)
-        } 
-        if(is.null(covM.dat) & !is.null(addcov.dat) & !is.null(intcov.dat)){
-          dat <- data.frame(y, addintcov.dat)
-          form <- myformula(addcov=addcov[[i]], intcov=intcov[[i]], nQ=0)
-        } 
-        if(!is.null(covM.dat) & is.null(addcov.dat) & is.null(intcov.dat)){
-          dat <- data.frame(y, covM.dat)
-          form <- myformula(addcov=names(covM.dat), intcov=NULL, nQ=0)
-        } 
-        if(is.null(covM.dat) & !is.null(addcov.dat) & is.null(intcov.dat)){
-          dat <- data.frame(y, addcov.dat)
-          form <- myformula(addcov=addcov[[i]], intcov=NULL, nQ=0)
-        } 
-        if(is.null(covM.dat) & is.null(addcov.dat) & !is.null(intcov.dat)){
-          dat <- data.frame(y, intcov.dat)
-          form <- myformula(addcov=NULL, intcov=intcov[[i]], nQ=0)
-        } 
-        if(is.null(covM.dat) & is.null(addcov.dat) & is.null(intcov.dat)){
-          dat <- data.frame(y)
-          form <- myformula(addcov=NULL, intcov=NULL, nQ=0)
-        } 
-      }
-      fm <- lm(form, dat)
-      aux.score <- saved.scores[[i]][score.pointer,1] <- AIC(fm,k=log(length(y)))[1]
-    }
-    mod.score <- mod.score + aux.score
+  for(j in 1:le){
+        add.forbid <- forbidden.additions(M=M,node=j)
+        n.additions <- n.additions + (le - 1 - length(c(add.forbid$upf, add.forbid$downf)))
+        rev.allow <- check.reversions(M=M,node=j)$allowed
+        if(!is.null(rev.allow))
+          n.reversions <- n.reversions + nrow( rev.allow )
   }
-  mymodel <- paste(mymodel,collapse="")
-  list(mod.score=mod.score,saved.scores=saved.scores,mymodel=mymodel)
+  nbhd.size <- n.deletions + n.additions + n.reversions
+  list(nbhd.size=nbhd.size, 
+       n.deletions=n.deletions,
+       n.additions=n.additions, 
+       n.reversions=n.reversions)
 }
 ######################################################################
 ######################################################################
@@ -439,4 +362,20 @@ hk.design.matrix <- function(qtlo, cross.type="f2")
     hkm <- matrix(tmp,nr,ng)
   }
   cbind(rep(1,nr),hkm)
+}
+######################################################################
+find.pheno.names <- function(cross, pheno.col)
+{
+  if(!is.null(pheno.col)) {
+    if(is.list(pheno.col)) {
+      for(i in seq(length(pheno.col)))
+        if(!is.character(pheno.col[[i]]))
+          pheno.col[[i]] <- names(cross$pheno)[pheno.col[[i]]]
+    }
+    else {
+      if(!is.character(pheno.col))
+        pheno.col <- names(cross$pheno)[pheno.col]
+    }
+  }
+  pheno.col
 }

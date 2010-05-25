@@ -1,46 +1,27 @@
-\name{qtlnet.pheno}
-\alias{qtlnet.pheno}
+\name{loci.qtlnet}
+\alias{loci.qtlnet}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{QTL architecture per node as list}
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Determines QTL that affect each phenotype conditional on the model-averaged
+network and on covariates.
 }
 \usage{
-qtlnet.pheno(pheno.net.str, cross, pheno.nms, addcov, intcov, thr, chr.pos = FALSE)
+loci.qtlnet(qtlnet.object, chr.pos = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{pheno.net.str}{
-%%     ~~Describe \code{pheno.net.str} here~~
-}
-  \item{cross}{
-%%     ~~Describe \code{cross} here~~
-}
-  \item{pheno.nms}{
-%%     ~~Describe \code{pheno.nms} here~~
-}
-  \item{addcov}{
-%%     ~~Describe \code{addcov} here~~
-}
-  \item{intcov}{
-%%     ~~Describe \code{intcov} here~~
-}
-  \item{thr}{
-%%     ~~Describe \code{thr} here~~
+  \item{qtlnet.object}{
+Object of class \code{qtlnet}.
 }
   \item{chr.pos}{
-%%     ~~Describe \code{chr.pos} here~~
+Include chromsome and position if \code{TRUE}.
 }
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+List containing, for each phenotype in the network, a character vector
+of the QTL names as \code{chr@pos}, or pseudomarker name if
+\code{chr.pos} is \code{FALSE}.
 }
 \author{
 Brian S. Yandell and Elias Chaibub Neto
@@ -58,12 +39,6 @@ TR 1146R, Department of Statistics, UW-Madison.
 \code{\link{newcross.mcmc}}
 }
 \examples{
-## Load object newcross with 5 traits.
-data(newcross)
-
-## Load MCMC samples created by qtlnet.mcmc.
-data(newcross.mcmc)
-
-qtlnet.pheno(newcross.mcmc, newcross, chr.pos=TRUE)
+loci.qtlnet(newcross.mcmc)
 }
 \keyword{ ~kwd1 }
