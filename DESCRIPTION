@@ -1,6 +1,6 @@
 Package: qtlnet
-Version: 0.3.1
-Date: 2010-05-05
+Version: 0.3.2
+Date: 2010-05-06
 Author: Elias Chaibub Neto <echaibub@hotmail.com>
 Title: Causal Inference of QTL Networks
 Description: Functions to Simultaneously Infer Causal Graphs and Genetic Architecture
@@ -11,4 +11,4 @@ LazyLoad: yes
 LazyData: yes
 License: GPL (>= 2)
 URL: http://www.stat.wisc.edu/~yandell/attie/data
-Packaged: 2010-05-06 03:54:34 UTC; yandell
+Packaged: 2010-05-06 21:20:22 UTC; yandell

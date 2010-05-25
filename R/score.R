@@ -3,9 +3,10 @@ score.model <- function(M, saved.scores, cross, addcov, intcov, thr, method = "h
 {
   ## addcov, intcov, thr, are lists
   le <- ncol(M)
-  mod.score <- 0
+  model.score <- 0
   mymodel <- rep(NA,le)
   count.score <- 0
+  update.scores <- NULL
   saved.patterns <- dimnames(saved.scores)[[1]]
   for(i in 1:le){
     pheno <- node.parents(M, i)
@@ -16,8 +17,8 @@ score.model <- function(M, saved.scores, cross, addcov, intcov, thr, method = "h
       cat(score.pointer,i, pheno$code, "\n")
       browser()
     }
-    aux.score <- saved.scores[score.pointer, i]
-    if(is.na(aux.score)){
+    bic <- saved.scores[score.pointer, i]
+    if(is.na(bic)){
       ## Phenotype i is response.
       y <- cross$pheno[,i]
 
@@ -74,15 +75,16 @@ score.model <- function(M, saved.scores, cross, addcov, intcov, thr, method = "h
       fm <- lm(form, dat)
 
       ## Update saved scores.
-      aux.score <- saved.scores[score.pointer, i] <- AIC(fm,k=log(length(y)))[1]
+      bic <- AIC(fm, k = log(length(y)))[1]
+      update.scores <- rbind(update.scores, c(score.pointer, i, bic))
     }
     ## Accumulate model score.
-    mod.score <- mod.score + aux.score
+    model.score <- model.score + bic
   }
   
-  list(mod.score = mod.score,
-       saved.scores = saved.scores,
-       mymodel = paste(mymodel,collapse=""))
+  list(model.score = model.score,
+       update.scores = update.scores,
+       model.name = paste(mymodel,collapse=""))
 }
 ###########################################################################################
 set.dat.form <- function(y, covM.dat=NULL, addcov.dat=NULL, intcov.dat=NULL,
@@ -118,7 +120,7 @@ node.parents <- function(M, node)
     parents <- aux
     identifier <- paste(node,paste(parents,collapse=","),sep="|")
   }
-  code <- sum(M[-node, node] * 10 ^ seq(0, nrow(M) - 2))
+  code <- sum(M[-node, node] * 2 ^ seq(0, nrow(M) - 2))
   list(parents=parents, identifier=identifier, code = code)
 }
 ######################################################################

@@ -5,7 +5,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         max.parents = 3,
                         M0 = matrix(0, le.pheno, le.pheno),
                         burnin = 0.1, method = "hk", random.seed = NULL,
-                        verbose = FALSE)
+                        verbose = FALSE, ...)
 {
   le.pheno <- length(pheno.col)
 
@@ -80,69 +80,70 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   post.bic <- rep(NA,nSamples)
   post.model <- rep(NA,nSamples)
   all.bic <- rep(NA,nSamples)
-  
-##  saved.scores <- list()
-##  for(i in 1:le.pheno){
-##    saved.scores[[i]] <- create.saved.score(node=pheno.col[i], node.nms=pheno.col)
-##  }
-##  names(saved.scores) <- pheno.names
-  saved.scores <- make.saved.scores(pheno.names, max.parents)
+
+  extra <- list(...)
+  saved.scores <- make.saved.scores(pheno.names, max.parents, extra$saved.scores)
         
   M.old <- M0
   ne.old <- nbhd.size(M.old, max.parents)[[1]]
-  aux.old <- score.model(M=M.old, saved.scores=saved.scores, cross=cross,
-                         addcov=addcov, intcov=intcov, thr=threshold, method = method,
-                         verbose = TRUE)
+  aux.new <- score.model(M.old, saved.scores, cross,
+                         addcov, intcov, threshold, method, verbose)
   if(verbose) cat("\n")
   
-  bic.old <- aux.old[[1]]
-  saved.scores <- aux.old[[2]]
-  model.old <- aux.old[[3]]
-  post.bic[1] <- all.bic[1] <- bic.old
-  post.net.str[,,1] <- M.old
-  post.model[1] <- model.old
+  bic.old <- aux.new$model.score
+  tmp <- aux.new$update.scores
+  if(!is.null(tmp)) {
+    for(j in seq(nrow(tmp)))
+      saved.scores[tmp[j,1], tmp[j,2]] <- tmp[j,3]
+  }
+  model.old <- aux.new$model.name
+
+  k <- 0
+  if(thinning <= 1) {
+    post.bic[1] <- all.bic[1] <- bic.old
+    post.net.str[,,1] <- M.old
+    post.model[1] <- model.old
+    k <- 1
+  }
   cont.accept <- 0
-  k <- 2
-  aux.thin <- c(1:nSamples)*thinning
   for(i in 2:(nSamples*thinning)){
     M.new <- propose.new.structure(M.old, max.parents)
-    ne.new <- nbhd.size(M=M.new, max.parents = max.parents)[[1]]
-    aux.new <- score.model(M=M.new, saved.scores=saved.scores, cross=cross,
-                           addcov=addcov, intcov=intcov, thr=threshold, method = method,
-                           verbose = verbose)
-    bic.new <- aux.new[[1]]
-    if(i == aux.thin[k]) 
-      all.bic[k] <- aux.new[[1]]
-    saved.scores <- aux.new[[2]]
-    model.new <- aux.new[[3]]
+    ne.new <- nbhd.size(M.new, max.parents)[[1]]
+    aux.new <- score.model(M.new, saved.scores, cross,
+                           addcov, intcov, threshold, method, verbose)
+
+    ## Typically only a few update.scores.
+    tmp <- aux.new$update.scores
+    if(!is.null(tmp)) {
+      for(j in seq(nrow(tmp)))
+        saved.scores[tmp[j,1], tmp[j,2]] <- tmp[j,3]
+    }
+
+    bic.new <- aux.new$model.score
+    model.new <- aux.new$model.name
     mr <- exp(-0.5*(bic.new - bic.old))*(ne.old/ne.new)
     if(runif(1) <= min(1,mr)){
-      if(i == aux.thin[k]){
-        post.bic[k] <- bic.new
-        post.net.str[,,k] <- M.new
-        post.model[k] <- model.new
-        k <- k + 1
-      }
       M.old <- M.new
       bic.old <- bic.new
       ne.old <- ne.new
       model.old <- model.new
       cont.accept <- cont.accept + 1
     }
-    else{
-      if(i == aux.thin[k]){      
-        post.bic[k] <- bic.old
-        post.net.str[,,k] <- M.old
-        post.model[k] <- model.old
-        k <- k + 1
-      }
+
+    ## Bookkeeping to save sample.
+    if((i %% thinning) == 0){      
+      k <- k + 1
+      all.bic[k] <- bic.new
+      post.bic[k] <- bic.old
+      post.net.str[,,k] <- M.old
+      post.model[k] <- model.old
+      if(verbose) print(c(i,k)) 
     }
-    if(verbose & i == aux.thin[k-1]) print(c(i,k-1)) 
   }           
   out <- list(post.model=post.model,
               post.bic=post.bic, 
               post.net.str=post.net.str, 
-              freq.accept=cont.accept/(nSamples*thinning), 
+              freq.accept = cont.accept / (nSamples * thinning), 
               saved.scores=saved.scores, 
               all.bic=all.bic,
               cross = cross)
@@ -169,7 +170,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   out
 }
 ######################################################################
-make.saved.scores <- function(pheno.names, max.parents = 3)
+make.saved.scores <- function(pheno.names, max.parents = 3, saved.scores = NULL)
 {
   le.pheno <- length(pheno.names)
   n.other <- le.pheno - 1
@@ -178,13 +179,24 @@ make.saved.scores <- function(pheno.names, max.parents = 3)
   ## Create possible patterns. Must be a faster way to do this, but so what.
   patterns <- 0
   for(i in seq(1, max.parents)) {
-    patterns <- c(patterns, apply(10 ^ (combn(n.other, i) - 1), 2, sum))
+    patterns <- c(patterns, apply(2 ^ (combn(n.other, i) - 1), 2, sum))
   }
 
-  saved.scores <- matrix(NA, length(patterns), le.pheno)
-  dimnames(saved.scores) <- list(as.character(patterns), pheno.names)
-  
-  saved.scores
+  out <- matrix(NA, length(patterns), le.pheno)
+  dimnames(out) <- list(as.character(patterns), pheno.names)
+
+  if(!is.null(saved.scores)) {
+    dim.scores <- dimnames(saved.scores)
+    if(!all(pheno.names == dim.scores[[2]]))
+      stop("all pheno.names in user-supplied saved.scores must agree")
+    wh <- match(dim.scores[[1]], as.character(patterns), nomatch = 0)
+    tmp <- (wh == 0)
+    if(any(tmp))
+      warning("some patterns in user-supplied saved.scores not found")
+    if(!all(tmp))
+      out[wh,] <- saved.scores[!tmp,]
+  }
+  out
 }
 ######################################################################
 propose.new.structure <- function(M0, max.parents = 3)

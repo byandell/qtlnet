@@ -33,11 +33,11 @@ TR 1146R, Department of Statistics, UW-Madison.
 \url{http://www.stat.wisc.edu/~yandell/doc/2010/92.AnnApplStat.pdf}
 }
 \seealso{
-\code{\link{qtlnet.mcmc}}
+\code{\link{mcmc.qtlnet}}
 }
 \examples{
-data(newcross.mcmc)
-print(newcross.mcmc)
-summary(newcross.mcmc)
+data(Pscdbp.qtlnet)
+print(Pscdbp.qtlnet)
+summary(Pscdbp.qtlnet)
 }
 \keyword{utilities}

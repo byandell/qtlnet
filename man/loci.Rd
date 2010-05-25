@@ -36,9 +36,9 @@ TR 1146R, Department of Statistics, UW-Madison.
 \url{http://www.stat.wisc.edu/~yandell/doc/2010/92.AnnApplStat.pdf}
 }
 \seealso{
-\code{\link{newcross.mcmc}}
+\code{\link{mcmc.qtlnet}}
 }
 \examples{
-loci.qtlnet(newcross.mcmc)
+loci.qtlnet(Pscdbp.qtlnet)
 }
 \keyword{ ~kwd1 }

@@ -78,10 +78,10 @@ TR 1146R, Department of Statistics, UW-Madison.
   \code{\link[igraph]{tkplot}}
 }
 \examples{
-newcross.graph <- graph.qtlnet(newcross.mcmc)
-newcross.graph
+Pscdbp.graph <- graph.qtlnet(Pscdbp.qtlnet)
+Pscdbp.graph
 \dontrun{
-tkplot(newcross.graph)
+tkplot(Pscdbp.graph)
 }
 }
 \keyword{ ~kwd1 }

@@ -1,8 +1,6 @@
 \name{mcmc.qtlnet}
 \alias{qtlnet}
 \alias{mcmc.qtlnet}
-\alias{newcross.mcmc}
-\alias{newcross}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{MCMC across DAGs}
 \description{
@@ -12,8 +10,6 @@
 mcmc.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
   nSamples = 1000, thinning = 1, max.parents = 3,
   M0, burning = TRUE, method = "hk", random.seed = NULL, verbose = FALSE)
-data(newcross.mcmc)
-data(newcross)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -112,25 +108,13 @@ TR 1146R, Department of Statistics, UW-Madison.
   \code{\link[qtl]{read.cross}},  \code{\link[qtl]{scanone}},  \code{\link[base]{set.seed}}
 }
 \examples{
+data(Pscdbp)
 \dontrun{
-  ## Load object mycross.
-  data(mycross)
-
-  ## Subset to five traits to reduce calculation time.
-  newcross <- mycross
-  newcross$pheno <- mycross$pheno[,c(1,2,4,5,6)]
-  newcross <- calc.genoprob(newcross,step=1)
-  save(newcross, file = "newcross.RData", compress = TRUE)
-}
-data(newcross)
-
-\dontrun{
-  newcross.mcmc <- mcmc.qtlnet(newcross, pheno.col = c(1:5),
+  Pscdbp.qtlnet <- mcmc.qtlnet(Pscdbp, pheno.col = c(1,2,4,5,6),
                                threshold = 3.83,
                                nSamples = 1000, thinning = 20, 
                                random.seed = 92387475, verbose = TRUE)
-  save(newcross.mcmc, file = "newcross.mcmc.RData", compress = TRUE)
+  save(Pscdbp.qtlnet, file = "Pscdbp.qtlnet.RData", compress = TRUE)
 }
-data(newcross.mcmc)
 }
 \keyword{ ~kwd1 }

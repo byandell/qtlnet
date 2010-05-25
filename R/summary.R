@@ -1,10 +1,13 @@
-print.qtlnet <- function(x, cutoff = 0.01, ...)
+print.qtlnet <- function(x, cutoff = 0.01, digits = 3, ...)
 {
   cat("\nModel averaged probabilities for edge direction (row -> col):\n")
-  print(x$model.average$mav)
+  print(round(x$model.average$mav, digits))
 
   cat("\nPosterior probabilities by causal model:\n")
-  print(x$model.average$pp[x$model.average$pp[,2] >= cutoff,, drop = FALSE])
+  wh <- which(x$model.average$pp[,2] >= cutoff)
+  if(!length(wh))
+    wh <- which.max(x$model.average$pp[,2])
+  print(x$model.average$pp[wh,, drop = FALSE])
   
   invisible(x$model.average)
 }  
@@ -12,7 +15,7 @@ print.qtlnet <- function(x, cutoff = 0.01, ...)
 summary.qtlnet <- function(object, ...)
 {
   mav <- object$model.average[[1]]
-  node.nms <- attr(newcross.mcmc, "pheno.names")
+  node.nms <- attr(object, "pheno.names")
 
   n <- nrow(mav)
   new <- mav
@@ -32,7 +35,8 @@ summary.qtlnet <- function(object, ...)
       }
     }
   }  
-  out <- list(averaged.net = M.2.lista(M=new,node.nms=node.nms),
+  out <- list(freq.accept = object$freq.accept,
+              averaged.net = M.2.lista(new, node.nms),
               posterior.table = averaged.posterior.table(mav, node.nms))
   class(out) <- c("summary.qtlnet", "list")
   out
@@ -46,6 +50,8 @@ print.summary.qtlnet <- function(x, ...)
   cat("\nPosterior probabilities by direction:\n")
   print(x$posterior.table)
 
+  cat("\nAcceptance frequency for MCMC:", x$freq.accept, "\n")
+  
   invisible(x)
 }
 ######################################################################
