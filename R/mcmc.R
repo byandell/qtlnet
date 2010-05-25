@@ -179,69 +179,62 @@ propose.new.structure <- function(M, max.parents = 3, verbose = FALSE)
 
   ## To speed up, use M as logical matrix. Still return 0/1 matrix for now.
   le.nodes <- ncol(M)
-  flag <- 0
-  while(flag == 0){
+  flag <- TRUE
+  while(flag){
     ## Pick node and decide on add/delete/reverse.
     ## Keep doing this until successful.
     
     node <- sample(seq(le.nodes),1)
     move <- sample(c("add","delete","reverse"),1)
-
     if(verbose)
       cat(node, move, "")
-    
-    ## Add an edge with a direction.
-    if(move == "add"){
-      aux1 <- forbidden.additions(M, node, max.parents)
-      ## Is there a down option?
-      aux3 <- unique(c(node, aux1$upf, aux1$downf))
-      aux3 <- seq(le.nodes)[-aux3]
 
-      if(length(aux3)) {
-        ## Check if any of aux3 is at or above max.parents.
-        wh <- which(apply(M[, aux3, drop = FALSE], 2, sum) >= max.parents)
-        if(length(wh))
-          aux3 <- aux3[-wh]
-      }
-      if(length(aux3)) {
-        if(length(aux3) > 1)
-          aux3 <- sample(aux3, 1)
-        M[node,aux3] <- 1
-        if(verbose)
-          cat(aux3, "\n")
-        if(node == 3 & aux3 == 7)
-          browser()
-        flag <- 1
-      } 
-    }
-
-    ## Reverse direction of an edge.
-    if(move == "reverse"){
-      aux1 <- check.reversions(M, node, max.parents)$allowed
-      if(!is.null(aux1)){
-        le.rev <- nrow(aux1)
-        aux3 <- sample(seq(le.rev), 1)
-        aux3 <- aux1[aux3, ]
-        M[aux3[1], aux3[2]] <- 0
-        M[aux3[2], aux3[1]] <- 1
-        if(verbose)
-          cat(aux3[1], aux3[2], "\n")
-        flag <- 1
-      }
-    }
-
-    ## Delete an existing edge.
-    if(move == "delete"){
-      aux1 <- which(M[, node] == 1)
-      if(length(aux1)){
-        if(length(aux1) > 1)
-          aux1 <- sample(aux1, 1)
-        M[aux1, node] <- 0
-        if(verbose)
-          cat(aux1, "\n")
-        flag <- 1
-      }
-    }
+    switch(move,
+           add = {
+             ## Add an edge with a direction.
+             aux1 <- forbidden.additions(M, node, max.parents)
+             ## Is there a down option?
+             aux3 <- unique(c(node, aux1$upf, aux1$downf))
+             aux3 <- seq(le.nodes)[-aux3]
+             
+             if(length(aux3)) {
+               ## Check if any of aux3 is at or above max.parents.
+               wh <- which(apply(M[, aux3, drop = FALSE], 2, sum) >= max.parents)
+               if(length(wh))
+                 aux3 <- aux3[-wh]
+             }
+             if(!(flag <- (length(aux3) == 0))) {
+               if(length(aux3) > 1)
+                 aux3 <- sample(aux3, 1)
+               M[node,aux3] <- 1
+               if(verbose)
+                 cat(aux3, "\n")
+             } 
+           },
+           reverse = {
+             ## Reverse direction of an edge.
+             aux1 <- check.reversions(M, node, max.parents)$allowed
+             if(!(flag <- is.null(aux1))) {
+               le.rev <- nrow(aux1)
+               aux3 <- sample(seq(le.rev), 1)
+               aux3 <- aux1[aux3, ]
+               M[aux3[1], aux3[2]] <- 0
+               M[aux3[2], aux3[1]] <- 1
+               if(verbose)
+                 cat(aux3[1], aux3[2], "\n")
+             }
+           },
+           delete = {
+             ## Delete an existing edge.
+             aux1 <- which(M[, node] == 1)
+             if(!(flag <- (length(aux1) == 0))) {
+               if(length(aux1) > 1)
+                 aux1 <- sample(aux1, 1)
+               M[aux1, node] <- 0
+               if(verbose)
+                 cat(aux1, "\n")
+             }
+           })
   }
   M
 }
@@ -279,18 +272,20 @@ check.downstream <- function(M, downf)
   ## After accounting for scanone, 85% of time is nbhd.size.
   ## Of that, 85% (75% overall) is in check.downstream.
 
+  count.downok <- nrow(M) - 1 - length(downf)
+  
   ## Check downstream to see if a cycle would be created.
   tmpfn <- function(x) sum(x)
   is.down <- apply(M[, downf, drop = FALSE], 1, tmpfn)
   flag <- TRUE
   while(flag){
     aux1 <- which(is.down > 0)
-    if(flag <- length(aux1)) {
-      is.new <- aux1 %in% downf
-      flag <- !all(is.new)
-      if(flag) {
-        is.down <- apply(M[, aux1[!is.new], drop = FALSE], 1, tmpfn)
-        downf <- c(downf, aux1[!is.new])
+    if(flag <- (length(aux1) > 0 & count.downok > 0)) {
+      aux1 <- aux1[!(aux1 %in% downf)]
+      if(flag <- length(aux1)) {
+        is.down <- apply(M[, aux1, drop = FALSE], 1, tmpfn)
+        downf <- c(downf, aux1)
+        count.downok <- count.downok - flag
       }
     }
   }

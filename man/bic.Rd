@@ -62,6 +62,10 @@ The most expensive part of calculations is running
 \code{\link[qtl]{scanone}} on each phenotype with parent phenotypes as
 covariates. One strategy is to pre-compute the BIC contributions using a
 cluster and save them for later use.
+
+The \code{parents.qtlnet} routine creates a list of possible parents
+that can be used to enumerate all needed \code{\link[qtl]{scanone}}
+runs, as shown in the second \code{dontrun} part of the example.
 }
 \value{
   Matrix with columns:
@@ -108,7 +112,7 @@ sum.parents
 groups <- 1 + floor(cumsum(sum.parents$n.child) / 100)
 tapply(sum.parents$n.child, groups, sum)
 
-## Run 30 smaller calculations (say on separate machines).
+## Run 40 smaller calculations (say on separate machines).
 bic.group <- list()
 for(i in unique(groups)) {
   print(c(i, sum(sum.parents$n.child[groups == i])))
