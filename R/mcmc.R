@@ -2,21 +2,13 @@
 mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         addcov=NULL, intcov=NULL,
                         nSamples = 1000, thinning=1,
-                        max.parents = 3, scan.parents = le.pheno - 1,
-                        M0 = matrix(0, le.pheno, le.pheno),
+                        max.parents = 3,
+                        M0 = matrix(0, n.pheno, n.pheno),
                         burnin = 0.1, method = "hk", random.seed = NULL,
+                        saved.scores = NULL,
                         verbose = FALSE, ...)
 {
-  le.pheno <- length(pheno.col)
-
   ## Check input parameters.
-
-  ## LOD threshold by phenotype.
-  if(length(threshold) == 1)
-    threshold <- rep(threshold, le.pheno)
-  threshold <- as.list(threshold)
-  if(length(threshold) != le.pheno)
-    stop("threshold must have same length as pheno.col")
 
   ## Random number generator seed.
   if(!is.null(random.seed)) {
@@ -35,40 +27,25 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   if(burnin < 0 | burnin > 1)
     stop("burnin must be between 0 and 1")
 
+  ## Adjust phenotypes and covariates to be numeric.
+  cross <- adjust.pheno(cross, pheno.col, addcov, intcov)
+  pheno.col <- cross$pheno.col
+  pheno.names <- cross$pheno.names
+  addcov <- cross$addcov
+  intcov <- cross$intcov
+  cross <- cross$cross
+
+  n.pheno <- length(pheno.col)
+
   ## Initial network matrix.
-  if(nrow(M0) != le.pheno | ncol(M0) != le.pheno)
+  if(nrow(M0) != n.pheno | ncol(M0) != n.pheno)
     paste("M0 must be square matrix the size of pheno.col")
 
-  ## Adjust phenotype and covariate names and columns.
-  ## Make sure addcov and intcov are NULL or lists.
-  pheno.names <- find.pheno.names(cross, pheno.col)
-  make.list <- function(x, namex, len) {
-    out <- x
-    if(!is.null(x)) {
-      if(is.list(x)) {
-        if(length(x) != len)
-          stop(paste(namex, "is list but not of same length as pheno.col"))
-      }
-      else {
-        out <- vector(mode="list", length = len)
-        for(i in seq(len))
-          out[[i]] <- x
-      }
-    }
-    out
-  }
-  addcov.names <- make.list(find.pheno.names(cross, addcov))
-  intcov.names <- make.list(find.pheno.names(cross, intcov))
-  cross$pheno <-
-    cross$pheno[, unique(c(pheno.names, unlist(addcov.names), unlist(intcov.names)))]
-  pheno.col <- find.pheno(cross, pheno.names)
-  if(!is.null(addcov))
-    for(i in seq(length(addcov)))
-        addcov[[i]] <- find.pheno(cross, addcov.names[[i]])
-  if(!is.null(intcov))
-    for(i in seq(length(intcov)))
-        intcov[[i]] <- find.pheno(cross, intcov.names[[i]])
-
+  ## LOD threshold by phenotype.
+  if(length(threshold) == 1)
+    threshold <- rep(threshold, n.pheno)
+  if(length(threshold) != n.pheno)
+    stop("threshold must have same length as pheno.col")
 
   ## Calculate genotype probabilities if not already done.
   if (!("prob" %in% names(cross$geno[[1]]))) {
@@ -76,25 +53,28 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     cross <- calc.genoprob(cross)
   }
   
-  post.net.str <- array(dim=c(le.pheno,le.pheno,nSamples))
+  post.net.str <- array(dim=c(n.pheno,n.pheno,nSamples))
   post.bic <- rep(NA,nSamples)
   post.model <- rep(NA,nSamples)
   all.bic <- rep(NA,nSamples)
 
-  extra <- list(...)
-  saved.scores <- make.saved.scores(pheno.names, max.parents, extra$saved.scores)
+  saved.scores <- make.saved.scores(pheno.names, max.parents,
+                                    saved.scores = saved.scores,
+                                    verbose = verbose, ...)
         
   M.old <- M0
   ne.old <- nbhd.size(M.old, max.parents)[[1]]
   aux.new <- score.model(M.old, saved.scores, cross, addcov, intcov,
-                         threshold, method, scan.parents, verbose)
+                         threshold, verbose, method = method, ...)
   if(verbose) cat("\n")
   
   bic.old <- aux.new$model.score
   tmp <- aux.new$update.scores
+  codes <- dimnames(saved.scores)[[1]]
   if(!is.null(tmp)) {
-    for(j in seq(nrow(tmp)))
-      saved.scores[tmp[j,1], tmp[j,2]] <- tmp[j,3]
+    index <- nrow(saved.scores)
+    index <- match(tmp[,1], codes) + index * (tmp[,2] - 1)
+    saved.scores[index] <- tmp[,3]
   }
   model.old <- aux.new$model.name
 
@@ -110,13 +90,14 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     M.new <- propose.new.structure(M.old, max.parents)
     ne.new <- nbhd.size(M.new, max.parents)[[1]]
     aux.new <- score.model(M.new, saved.scores, cross, addcov, intcov,
-                           threshold, method, scan.parents, verbose)
+                           threshold, verbose, method = method, ...)
 
     ## Typically only a few update.scores.
     tmp <- aux.new$update.scores
     if(!is.null(tmp)) {
-      for(j in seq(nrow(tmp)))
-        saved.scores[tmp[j,1], tmp[j,2]] <- tmp[j,3]
+      index <- nrow(saved.scores)
+      index <- match(tmp[,1], codes) + index * (tmp[,2] - 1)
+      saved.scores[index] <- tmp[,3]
     }
 
     bic.new <- aux.new$model.score
@@ -172,33 +153,40 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   out
 }
 ######################################################################
-make.saved.scores <- function(pheno.names, max.parents = 3, saved.scores = NULL)
+adjust.pheno <- function(cross, pheno.col, addcov, intcov)
 {
-  le.pheno <- length(pheno.names)
-  n.other <- le.pheno - 1
-  max.parents <- max(1, min(max.parents, le.pheno))
-
-  ## Create possible patterns. Must be a faster way to do this, but so what.
-  patterns <- 0
-  for(i in seq(1, max.parents)) {
-    patterns <- c(patterns, apply(2 ^ (combn(n.other, i) - 1), 2, sum))
+  ## Adjust phenotype and covariate names and columns.
+  ## Make sure addcov and intcov are NULL or lists.
+  pheno.names <- find.pheno.names(cross, pheno.col)
+  make.list <- function(x, namex, len) {
+    out <- x
+    if(!is.null(x)) {
+      if(is.list(x)) {
+        if(length(x) != len)
+          stop(paste(namex, "is list but not of same length as pheno.col"))
+      }
+      else {
+        out <- vector(mode="list", length = len)
+        for(i in seq(len))
+          out[[i]] <- x
+      }
+    }
+    out
   }
+  addcov.names <- make.list(find.pheno.names(cross, addcov))
+  intcov.names <- make.list(find.pheno.names(cross, intcov))
+  cross$pheno <-
+    cross$pheno[, unique(c(pheno.names, unlist(addcov.names), unlist(intcov.names)))]
+  pheno.col <- find.pheno(cross, pheno.names)
+  if(!is.null(addcov))
+    for(i in seq(length(addcov)))
+        addcov[[i]] <- find.pheno(cross, addcov.names[[i]])
+  if(!is.null(intcov))
+    for(i in seq(length(intcov)))
+        intcov[[i]] <- find.pheno(cross, intcov.names[[i]])
 
-  out <- matrix(NA, length(patterns), le.pheno)
-  dimnames(out) <- list(as.character(patterns), pheno.names)
-
-  if(!is.null(saved.scores)) {
-    dim.scores <- dimnames(saved.scores)
-    if(!all(pheno.names == dim.scores[[2]]))
-      stop("all pheno.names in user-supplied saved.scores must agree")
-    wh <- match(dim.scores[[1]], as.character(patterns), nomatch = 0)
-    tmp <- (wh == 0)
-    if(any(tmp))
-      warning("some patterns in user-supplied saved.scores not found")
-    if(!all(tmp))
-      out[wh,] <- saved.scores[!tmp,]
-  }
-  out
+  list(cross = cross, pheno.col = pheno.col, pheno.names = pheno.names,
+       addcov = addcov, intcov = intcov)
 }
 ######################################################################
 propose.new.structure <- function(M0, max.parents = 3)
@@ -258,15 +246,15 @@ propose.new.structure <- function(M0, max.parents = 3)
       }
     }
   }
-  ## This should not happen.
-  if(any(apply(M, 2, sum) > max.parents))
-    browser()
-  
   M
 }
 ######################################################################
 nbhd.size <- function(M, max.parents = 3)
 {
+  ## After accounting for scanone, 90% of time is in this routine.
+  ## Of that, 70% is in check.reversions, 30% in forbidden.additions.
+  ## Further, acceptance rate is 20%.
+  
   n.deletions <- sum(M)
   n.additions <- 0 
   n.reversions <- 0 

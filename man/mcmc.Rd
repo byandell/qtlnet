@@ -8,8 +8,8 @@ directed acyclic graphs (DAGs).
 }
 \usage{
 mcmc.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
-  nSamples = 1000, thinning = 1, max.parents = 3, scan.parents,
-  M0, burnin = 0.1, method = "hk", random.seed = NULL,
+  nSamples = 1000, thinning = 1, max.parents = 3, M0,
+  burnin = 0.1, method = "hk", random.seed = NULL, saved.scores = NULL,
   verbose = FALSE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -43,10 +43,6 @@ Thinning rate. Number of MCMC samples is \code{nSamples*thinning}.
 Maximum number of parents to a node. This reduces the complexity of
 graphs and shortens run time. Probably best to consider values of 3-5.
 }
-\item{scan.parents}{
-  Run Scan on all nodes with at most \code{scan.parents} number of
-  parents. See details.
-}
   \item{M0}{
 Matrix of 0s and 1s with initial directed graph of row->col if (row,col)
 entry is 1. Cycles are forbidden (e.g. 1s on diagonal or symmetric 1s
@@ -62,6 +58,10 @@ Model fitting method for \code{\link[qtl]{scanone}}.
 \item{random.seed}{
   Initialization seed for random number generator. Must be \code{NULL}
   (no reset) or positive numeric. Used in \code{\link[base]{set.seed}}.
+}
+\item{saved.scores}{
+  Updated scores, typically pre-computed by
+  \code{\link{bic.qtlnet}}.
 }
   \item{verbose}{
 Print iteration and number of models fit.
@@ -80,9 +80,16 @@ Additional arguments. Advanced users may want to supply pre-computed
   phenotypes in the network that could all have the same parents. For
   instance, for 5 phenotypes, if \code{(1|2,4)} is sampled, then do
   scanone of this model as well as \code{(3|2,4)} and \code{(5|2,4)}.
-  Setting \code{scan.parents} to \code{length(pheno.col) - 1} removes
-  restriction (default); any value less than one disallows multiple
-  trait scanning.
+  Setting the hidden parameter \code{scan.parents} to a value smaller
+  than \code{length(pheno.col) - 1} (default) disallows multiple
+  trait scanning with more than that number of parents.
+
+  The \code{saved.scores} parameter can greatly reduce MCMC run time,
+  by supplying pre-computed BIC scores. See
+  \code{\link{bic.qtlnet}}. Another option is to capture
+  \code{saved.scores} from a previous \code{mcmc.qtlnet} run with the
+  same phenotypes (and covariates). Caution is advised as only a modest
+  amount of checking can be done. 
   }
 \value{
   List of class \code{qtlnet}
@@ -122,11 +129,14 @@ Ann Appl Statist 4: 320-339.
 \url{http://dx.doi.org/10.1214/09-AOAS288}
 }
 \seealso{
-  \code{\link[qtl]{read.cross}},  \code{\link[qtl]{scanone}},  \code{\link[base]{set.seed}}
+  \code{\link[qtl]{read.cross}},  \code{\link[qtl]{scanone}},
+  \code{\link[base]{set.seed}},
+  \code{\link{bic.qtlnet}}.
 }
 \examples{
 data(Pscdbp)
 \dontrun{
+  ## Run of subset of traits. Still takes some time.
   Pscdbp.qtlnet <- mcmc.qtlnet(Pscdbp, pheno.col = c(1,2,4,5,6),
                                threshold = 3.83,
                                nSamples = 1000, thinning = 20, 
@@ -134,5 +144,13 @@ data(Pscdbp)
   save(Pscdbp.qtlnet, file = "Pscdbp.qtlnet.RData", compress = TRUE)
 }
 data(Pscdbp.qtlnet)
+
+\dontrun{
+  out.qtlnet <- mcmc.qtlnet(Pscdbp, pheno.col = 1:13,
+                            threshold = 3.83,
+                            nSamples = 1000, thinning = 20, 
+                            random.seed = 92387475, verbose = TRUE,
+                            saved.scores = Pscdbp.bic)
+}
 }
 \keyword{ ~kwd1 }

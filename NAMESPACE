@@ -13,12 +13,14 @@
 # directive.
 #
 
+export(bic.qtlnet)
+export(bic.join)
 export(graph.qtlnet)
 export(igraph.qtlnet)
-export(Rgraphviz.qtlnet)
 export(loci.qtlnet)
 export(mcmc.qtlnet)
-
+export(parents.qtlnet)
+export(Rgraphviz.qtlnet)
 
 ## The following have S3 methods:
 export(plot.qtlnet)
@@ -36,3 +38,5 @@ S3method(plot, qtlnet)
 S3method(print, qtlnet)
 S3method(summary, qtlnet)
 S3method(print, summary.qtlnet)
+S3method(print, parents.qtlnet)
+S3method(summary, parents.qtlnet)

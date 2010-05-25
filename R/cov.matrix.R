@@ -40,17 +40,19 @@ create.cov.matrix <- function(cross, cov.names)
 {
   if(!is.null(cov.names)){
     myformula <- formula(paste("~", paste(cov.names, collapse = "+")))
-    out <- model.matrix(myformula, cross$pheno)[,-1]
+    as.matrix(model.matrix(myformula, cross$pheno)[,-1])
   }
-  else{
-    out <- NULL
-  }
-  out
+  else
+    NULL
 }
 #######################################################################
 pull.pheno.null <- function(cross, cols) {
   if(is.null(cols))
     NULL
-  else
-    cross$pheno[, cols, drop = FALSE]
+  else {
+    if(length(cols))
+      cross$pheno[, cols, drop = FALSE]
+    else
+      NULL
+  }
 }

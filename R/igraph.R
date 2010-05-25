@@ -41,10 +41,11 @@ igraph.qtlnet <- function(x,
     node.color[node.names %in% pheno.names] <- pheno.color
   }
 
+  ## Not sure how these get set up and passed.
   ## Set up vertices
   vertex.color <- array(vertex.color, length(node.names))
   vertices <- data.frame(name = node.names, label = node.names,
-                         color = vertex.color)
+                         color = vertex.color, fill = vertex.color)
 
   ## Great graph object (library igraph).
   igraph.par("print.graph.attributes", TRUE)

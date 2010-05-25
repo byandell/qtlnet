@@ -20,36 +20,27 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, ...)
   QTLnodes <- list()
   for(i in 1:le){
     pa <- get.parents(pheno=pheno.nms[i], pheno.net.str=pheno.net.str)
-    covM.dat <- NULL
-    if(!is.null(pa)){
-      covM.dat <- data.frame(cross$pheno[,pa])
-      names(covM.dat) <- names(cross$pheno)[pa]
-    }
+    pacov.dat <- NULL
+    if(!is.null(pa))
+      pacov.dat <- as.matrix(cross$pheno[, pa, drop = FALSE])
 
-    addcovM.dat <- create.cov.matrix(cross,cov.names=addcov[[i]])
-    intcovM.dat <- create.cov.matrix(cross,cov.names=intcov[[i]])
-    addintcovM.dat <- create.cov.matrix(cross,cov.names=unique(c(addcov[[i]],intcov[[i]])))
-    addcov.dat <- data.frame(cross$pheno[,addcov[[i]]])
-    names(addcov.dat) <- addcov[[i]]
-    intcov.dat <- data.frame(cross$pheno[,intcov[[i]]])
-    names(intcov.dat) <- intcov[[i]]      
-    addintcov.dat <- data.frame(cross$pheno[,unique(c(addcov[[i]],intcov[[i]]))])
-    names(addintcov.dat) <- unique(c(addcov[[i]],intcov[[i]]))
-    if(!is.null(covM.dat) & !is.null(addcovM.dat)) 
-      aux.addcov <- cbind(covM.dat,addcovM.dat)
-    if(!is.null(covM.dat) & is.null(addcovM.dat)) 
-      aux.addcov <- covM.dat
-    if(is.null(covM.dat) & !is.null(addcovM.dat)) 
-      aux.addcov <- addcovM.dat
-    if(is.null(covM.dat) & is.null(addcovM.dat)) 
-      aux.addcov <- NULL
-    scan <- scanone(cross, pheno.col=i, addcov=aux.addcov, intcov=intcovM.dat, method = method)
-    ss <- summary(scan,thr=thr[[i]])
+    addcov.dat <- create.cov.matrix(cross, cov.names = unique(c(addcov[[i]], intcov[[i]])))
+    addcov.dat <- cbind(pacov.dat, addcov.dat)
+
+    intcov.dat <- create.cov.matrix(cross, cov.names = intcov[[i]])
+    
+    ## Reduce to nonmissing data.
+    tmp <- unique(c(i, pa, addcov[[i]], intcov[[i]]))
+    pheno.na <- apply(cross$pheno[, tmp, drop = FALSE], 1, function(x) any(is.na(x)))
+
+    ss <- scanone.summary(subset(cross, ind = !pheno.na), i,
+                          addcov.dat, intcov.dat, thr[[i]], method)
+
     markers <- row.names(ss)
     le.markers <- length(markers)
     if(le.markers > 0){ 
       if(chr.pos){
-        QTLnodes[[i]] <- paste(paste(paste("chr",ss[,1],sep=""),"@",sep=""),round(ss[,2],2),sep="")
+        QTLnodes[[i]] <- paste("chr", ss[,1], "@", round(ss[,2], 2), sep = "")
       }
       else{
         QTLnodes[[i]] <- markers
