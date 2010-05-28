@@ -91,26 +91,27 @@ Ann Appl Statist 4: 320-339.
 \code{\link{mcmc.qtlnet}}
 }
 \examples{
+pheno.col <- 1:13
+threshold <- 3.83
+max.parents <- 3
+parents <- parents.qtlnet(pheno.col, max.parents)
+summary(parents)
+
 \dontrun{
 ## Compute all phenotype/parent combinations.
 ## This takes several minutes.
-pheno.col <- 1:13
-threshold <- 3.83
 Pscdbp.bic <- bic.qtlnet(Pscdbp, pheno.col, threshold)
 save(Pscdbp.bic, file = "Pscdbp.bic.RData", compress = TRUE)
-}
-dim(Pscdbp.bic)
 
-\dontrun{
 ## Break up into pieces to run on several machines.
-max.parents <- 3
-parents <- parents.qtlnet(pheno.col, max.parents)
 ## Here is the number of BIC terms to compute (3083).
 sum.parents <- summary(parents)
-sum.parents
 ## Index so that approximately 40 groups of 100 per group.
 groups <- 1 + floor(cumsum(sum.parents$n.child) / 100)
 tapply(sum.parents$n.child, groups, sum)
+
+## Note that with max.parents = 12, there would be
+## 533 groups of 100, for a total of 53248 scanone runs.
 
 ## Run 40 smaller calculations (say on separate machines).
 bic.group <- list()
@@ -122,10 +123,12 @@ for(i in unique(groups)) {
 }
 
 ## The saved.scores should be saved to use for subsequent call.
-saved.scores <- bic.join(cross, pheno.col, bic.group)
-out.qtlnet <- mcmc.qtlnet(cross, pheno.col, threshold = 3.83,
+saved.scores <- bic.join(Pscdbp, pheno.col, bic.group)
+out.qtlnet <- mcmc.qtlnet(Pscdbp, pheno.col, threshold = threshold,
   saved.scores = saved.scores)
 }
+
+dim(Pscdbp.bic)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

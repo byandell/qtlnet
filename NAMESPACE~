@@ -13,7 +13,6 @@
 # directive.
 #
 
-export(c.qtlnet)
 export(bic.join)
 export(bic.qtlnet)
 export(graph.qtlnet)

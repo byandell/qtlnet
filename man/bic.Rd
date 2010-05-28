@@ -3,6 +3,7 @@
 \alias{parents.qtlnet}
 \alias{bic.join}
 \alias{Pscdbp.bic}
+\alias{c.qtlnet}
 \title{
 Pre-compute BIC values for qtlnet sampling.
 }
@@ -14,6 +15,7 @@ bic.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
   max.parents = 3, parents, verbose = TRUE, \dots)
 parents.qtlnet(pheno.col, max.parents, codes.only = FALSE)
 bic.join(cross, pheno.col, \dots, max.parents = 3)
+\method{c}{qtlnet}(\dots}
 data(Pscdbp.bic)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -126,6 +128,17 @@ for(i in unique(groups)) {
 saved.scores <- bic.join(Pscdbp, pheno.col, bic.group)
 out.qtlnet <- mcmc.qtlnet(Pscdbp, pheno.col, threshold = threshold,
   saved.scores = saved.scores)
+
+## If you want to run many MCMC steps, you might parallelize the MCMC.
+## The code below does 100 MCMC runs with randomized initial network.
+outs.qtlnet <- list()
+for(i in seq(100))
+  outs.qtlnet[[i]] <- mcmc.qtlnet(Pscdbp, pheno.col, threshold = threshold,
+    saved.scores = saved.scores, init.edges = NULL)
+## Combine outputs together.
+out.qtlnet <- c.qtlnet(outs.qtlnet)
+summary(out.qtlnet)
+print(out.qtlnet)
 }
 
 dim(Pscdbp.bic)
