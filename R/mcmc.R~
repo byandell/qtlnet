@@ -154,6 +154,55 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   out
 }
 ######################################################################
+c.qtlnet <- function(...)
+{
+  ## Combine qtlnet objects.
+  ## Might be useful to have summary that just pulls out the model averages.
+  ## Also need to think carefully about burnin--what does it mean here?
+  
+  netlist <- list(...)
+  out <- netlist[[1]]
+  if(!inherits(out, "qtlnet")) {
+    netlist <- out
+    out <- netlist[[1]]
+  }
+  if(!inherits(out, "qtlnet"))
+    stop("argument must be list of qtlnet objects")
+  
+  if(length(netlist) > 1) {
+    ## Need to do some checking here that qtlnet objects match up.
+    ## Minimal for now.
+    
+    n.pheno <- length(attr(out, "pheno.col"))
+    if(n.pheno != mean(sapply(netlist, function(x) length(attr(x, "pheno.col")))))
+      stop("different numbers of phenotypes not allowed")
+    if(attr(out, "thinning") != mean(sapply(netlist, function(x) attr(x, "thinning"))))
+      stop("thinning values differ")
+    ## check threshold vector.
+    if(!all(attr(out, "threshold") == apply(sapply(netlist, function(x) attr(x, "threshold")), 1, mean)))
+      stop("threshold values differ")
+
+    for(i in seq(2, length(netlist))) {
+      ## Per step summaries.
+      for(j in names(out)[c("post.model","post.bic","all.bic")])
+        out[[j]] <- c(out[[j]], netlist[[i]][[j]])
+
+      ## Attributes.
+      n1 <- attr(out, "nSamples")
+      n2 <- attr(netlist[[i]], "nSamples")
+      attr(out, "nSamples") <- n1 + n2
+
+      ## Matrices of network structure (3-D array).
+      out$post.net.str <- array(c(out$post.net.str, netlist[[i]]$post.net.str),
+                                c(n.pheno, n.pheno, n1 + n2))
+      ## Acceptance frequency.
+      out$freq.accept <- (n1 * out$freq.accept + n2 * netlist[[i]]$freq.accept) / (n1 + n2)
+    }
+    out$model.average <- qtlnet.average(out, burnin = attr(out, "burnin"))
+  }
+  out
+}
+######################################################################
 nbhd.size <- function(M, max.parents = 3)
 {
   n.deletions <- sum(M)
@@ -237,7 +286,7 @@ propose.new.structure <- function(M, max.parents = 3, verbose = FALSE)
     switch(move,
            add = {
              aux3 <- propose.add(M, node, max.parents)
-             if(!(flag <- (aux3 > 0))) {
+             if(!(flag <- (aux3 == 0))) {
                M[node,aux3] <- 1
                if(verbose)
                  cat(aux3, "\n")

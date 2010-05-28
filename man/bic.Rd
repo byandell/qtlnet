@@ -1,6 +1,5 @@
 \name{bic.qtlnet}
 \alias{bic.qtlnet}
-\alias{parents.qtlnet}
 \alias{bic.join}
 \alias{Pscdbp.bic}
 \alias{c.qtlnet}
@@ -13,9 +12,8 @@ Pre-compute BIC values for qtlnet sampling to speed up MCMC sampling.
 \usage{
 bic.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
   max.parents = 3, parents, verbose = TRUE, \dots)
-parents.qtlnet(pheno.col, max.parents, codes.only = FALSE)
 bic.join(cross, pheno.col, \dots, max.parents = 3)
-\method{c}{qtlnet}(\dots}
+\method{c}{qtlnet}(\dots)
 data(Pscdbp.bic)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -55,19 +53,17 @@ Interactive covariates, entered in the same manner as \code{addcov}.
     \code{bic.join}, these are a list of objects produced by
     \code{bic.qtlnet} (see example below).
   }
-  \item{codes.only}{
-    Return only codes of parents if \code{TRUE}.
-  }
 }
 \details{
-The most expensive part of calculations is running
-\code{\link[qtl]{scanone}} on each phenotype with parent phenotypes as
-covariates. One strategy is to pre-compute the BIC contributions using a
-cluster and save them for later use.
-
-The \code{parents.qtlnet} routine creates a list of possible parents
-that can be used to enumerate all needed \code{\link[qtl]{scanone}}
-runs, as shown in the second \code{dontrun} part of the example.
+  The most expensive part of calculations is running
+  \code{\link[qtl]{scanone}} on each phenotype with parent phenotypes as
+  covariates. One strategy is to pre-compute the BIC contributions using a
+  cluster and save them for later use.
+  
+  We divide the job into three steps: 1) determine parents and divide into
+  reasonable sized groups; 2) compute BIC scores using scanone on a grid
+  of computers; 3) compute multiple MCMC runs on a grid of computers. See
+  the example for details.
 }
 \value{
   Matrix with columns:
@@ -79,66 +75,132 @@ runs, as shown in the second \code{dontrun} part of the example.
   \item{bic}{BIC score for phenotype conditional on parents (and covariates).}
 }
 \author{
-Brian S. Yandell and Elias Chaibub Neto
+  Brian S. Yandell and Elias Chaibub Neto
 }
 \references{
-Chaibub Neto E, Keller MP, Attie AD, Yandell BS (2010)
-Causal Graphical Models in Systems Genetics: a unified
-framework for joint inference of causal network and
-genetic architecture for correlated phenotypes.
-Ann Appl Statist 4: 320-339.
-\url{http://dx.doi.org/10.1214/09-AOAS288}
+  Chaibub Neto E, Keller MP, Attie AD, Yandell BS (2010)
+  Causal Graphical Models in Systems Genetics: a unified
+  framework for joint inference of causal network and
+  genetic architecture for correlated phenotypes.
+  Ann Appl Statist 4: 320-339.
+  \url{http://dx.doi.org/10.1214/09-AOAS288}
 }
 \seealso{
-\code{\link{mcmc.qtlnet}}
+  \code{\link{mcmc.qtlnet}},
+  \code{\link{parents.qtlnet}}
 }
 \examples{
 pheno.col <- 1:13
-threshold <- 3.83
-max.parents <- 3
-parents <- parents.qtlnet(pheno.col, max.parents)
-summary(parents)
+max.parents <- 12
+size.qtlnet(pheno.col, max.parents)
 
 \dontrun{
 ## Compute all phenotype/parent combinations.
-## This takes several minutes.
-Pscdbp.bic <- bic.qtlnet(Pscdbp, pheno.col, threshold)
-save(Pscdbp.bic, file = "Pscdbp.bic.RData", compress = TRUE)
+## This shows how to break up into many smaller jobs.
 
-## Break up into pieces to run on several machines.
-## Here is the number of BIC terms to compute (3083).
-sum.parents <- summary(parents)
-## Index so that approximately 40 groups of 100 per group.
-groups <- 1 + floor(cumsum(sum.parents$n.child) / 100)
-tapply(sum.parents$n.child, groups, sum)
+#########################################
+## STEP 1: Preparation. Fast. Needed in steps 2 and 3.
 
-## Note that with max.parents = 12, there would be
-## 533 groups of 100, for a total of 53248 scanone runs.
+library(qtlnet) ## depends on R/qtl, R/igraph.
 
-## Run 40 smaller calculations (say on separate machines).
-bic.group <- list()
-for(i in unique(groups)) {
-  print(c(i, sum(sum.parents$n.child[groups == i])))
+pheno.col <- 1:13
+max.parents <- 12
+threshold <- 3.83
 
-  bic.group[[i]] <- bic.qtlnet(Pscdbp, pheno.col, threshold,
-    parents = parents[groups == i])
+## Load cross object. Here we use internal object.
+data(Pscdbp)
+## or: load("Pscdbp.RData")
+cross <- Pscdbp
+## or: cross <- read.cross("Pscdbp.csv", "csv")
+
+## Break up into groups to run on several machines.
+## ~53 groups of ~1000, for a total of 53248 scanone runs.
+parents <- parents.qtlnet(pheno.col, max.parents)
+groups <- group.qtlnet(parents = parents, group.size = 1000)
+
+## Save all relevant objects for later steps.
+save(cross, pheno.col, max.parents, threshold, parents, groups,
+  file = "Step1.RData", compress = TRUE)
+
+## Configuration of parallelization for next step.
+n.groups <- length(unique(groups))
+n.groups
+
+#########################################
+## STEP 2: Compute BIC scores. Parallelize.
+
+## NB: Configuration of parallelization determined using Step 1 results.
+
+library(qtlnet) ## depends on R/qtl, R/igraph.
+
+## Load Step 1 computations.
+load("Step1.RData")
+
+## Parallelize this:
+for(i in unique(groups))
+{
+  ## Pre-compute BIC scores for selected parents.
+  bic <- bic.qtlnet(cross, pheno.col, threshold,
+    max.parents = max.parents, parents = parents[groups == i])
+
+  save(bic, file = paste("bic", i, ".RData", sep = ""), compress = TRUE)
 }
 
-## The saved.scores should be saved to use for subsequent call.
-saved.scores <- bic.join(Pscdbp, pheno.col, bic.group)
-out.qtlnet <- mcmc.qtlnet(Pscdbp, pheno.col, threshold = threshold,
-  saved.scores = saved.scores)
+#########################################
+## STEP 3: Sample Markov chain (MCMC). Parallelize.
 
-## If you want to run many MCMC steps, you might parallelize the MCMC.
-## The code below does 100 MCMC runs with randomized initial network.
-outs.qtlnet <- list()
-for(i in seq(100))
-  outs.qtlnet[[i]] <- mcmc.qtlnet(Pscdbp, pheno.col, threshold = threshold,
-    saved.scores = saved.scores, init.edges = NULL)
+## NB: n.runs sets the number of parallel runs.
+
+n.runs <- 100
+
+library(qtlnet) ## depends on R/qtl, R/igraph.
+
+## Load Step 1 computations.
+load("Step1.RData")
+
+## Read in saved BIC scores and combine into one object.
+bic.group <- list()
+for(i in unique(groups))
+{
+  load(paste("bic", i, ".RData", sep = ""))
+  bic.group[[i]] <- bic
+}
+saved.scores <- bic.join(cross, pheno.col, bic.group)
+
+
+## Parallelize this:
+for(i in seq(n.runs))
+{
+  ## Run MCMC with randomized initial network.
+  mcmc <- mcmc.qtlnet(cross, pheno.col, threshold = threshold,
+    max.parents = max.parents, saved.scores = saved.scores, init.edges = NULL)
+
+  save(mcmc, file = paste("mcmc", i, ".RData", sep = ""), compress = TRUE)
+}
+
+#########################################
+## STEP 4: Combine results for post-processing.
+
+## NB: n.runs needed from Step 3.
+
+n.runs <- 100
+
+library(qtlnet) ## depends on R/qtl, R/igraph.
+
 ## Combine outputs together.
+outs.qtlnet <- list()
+for(i in seq(n.runs))
+{
+  load(paste("mcmc", i, ".RData", sep = ""))
+  outs.qtlnet[[i]] <- mcmc
+}
+
 out.qtlnet <- c.qtlnet(outs.qtlnet)
 summary(out.qtlnet)
 print(out.qtlnet)
+
+## End of parallel example.
+#########################################
 }
 
 dim(Pscdbp.bic)

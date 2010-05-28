@@ -303,36 +303,3 @@ find.pheno.names <- function(cross, pheno.col)
   }
   pheno.col
 }
-######################################################################
-size.qtlnet <- function(pheno.col, max.parents = 3)
-{
-  if(length(pheno.col) > 1)
-    n.pheno <- length(pheno.col)
-  else
-    n.pheno <- pheno.col
-  
-  if(max.parents >= n.pheno - 1)
-    n.pheno * 2 ^ (n.pheno - 1)
-  else {
-    count <- n.pheno
-    if(max.parents)
-      for(i in seq(max.parents))
-        count <- count + (n.pheno - i) * choose(n.pheno, i)
-    count
-  }
-}
-######################################################################
-group.qtlnet <- function(pheno.col, max.parents = 3,
-                         n.groups,
-                         group.size = 1000,
-                         parents = parents.qtlnet(pheno.col, max.parents))
-{
-  n.child <- summary(parents)$n.child
-  n.runs <- sum(n.child)
-  if(!missing(n.groups))
-    if(n.groups > 0)
-      group.size <- round(n.runs / n.groups)
-
-  1 + floor(cumsum(n.child) / group.size)
-}
-
