@@ -272,17 +272,23 @@ adjust.pheno <- function(cross, pheno.col, addcov, intcov)
     }
     out
   }
-  addcov.names <- make.list(find.pheno.names(cross, addcov))
-  intcov.names <- make.list(find.pheno.names(cross, intcov))
+  addcov.names <- make.list(find.pheno.names(cross, addcov),
+                            namex="addcov",len=length(pheno.col))
+  intcov.names <- make.list(find.pheno.names(cross, intcov),
+                              namex="intcov",len=length(pheno.col))
   cross$pheno <-
     cross$pheno[, unique(c(pheno.names, unlist(addcov.names), unlist(intcov.names)))]
   pheno.col <- find.pheno(cross, pheno.names)
-  if(!is.null(addcov))
-    for(i in seq(length(addcov)))
+  if(!is.null(addcov)) {
+    addcov <- list()
+    for(i in seq(length(addcov.names)))
         addcov[[i]] <- find.pheno(cross, addcov.names[[i]])
-  if(!is.null(intcov))
-    for(i in seq(length(intcov)))
+  }
+  if(!is.null(intcov)) {
+    intcov <- list()
+    for(i in seq(length(intcov.names)))
         intcov[[i]] <- find.pheno(cross, intcov.names[[i]])
+  }
 
   list(cross = cross, pheno.col = pheno.col, pheno.names = pheno.names,
        addcov = addcov, intcov = intcov)
@@ -333,6 +339,8 @@ group.qtlnet <- function(pheno.col, max.parents = 3,
     if(n.groups > 0)
       group.size <- round(n.runs / n.groups)
 
-  1 + floor(cumsum(n.child) / group.size)
+  groups <- 1 + floor(cumsum(n.child) / group.size)
+  cbind(begin = seq(groups)[!duplicated(groups)],
+        end = cumsum(table(groups)))
 }
 

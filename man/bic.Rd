@@ -122,10 +122,6 @@ groups <- group.qtlnet(parents = parents, group.size = 1000)
 save(cross, pheno.col, max.parents, threshold, parents, groups,
   file = "Step1.RData", compress = TRUE)
 
-## Configuration of parallelization for next step.
-n.groups <- length(unique(groups))
-n.groups
-
 #########################################
 ## STEP 2: Compute BIC scores. Parallelize.
 
@@ -137,11 +133,12 @@ library(qtlnet) ## depends on R/qtl, R/igraph.
 load("Step1.RData")
 
 ## Parallelize this:
-for(i in unique(groups))
+for(i in seq(nrow(groups)))
 {
   ## Pre-compute BIC scores for selected parents.
   bic <- bic.qtlnet(cross, pheno.col, threshold,
-    max.parents = max.parents, parents = parents[groups == i])
+    max.parents = max.parents,
+    parents = parents[seq(groups[i,1], groups[i,2])])
 
   save(bic, file = paste("bic", i, ".RData", sep = ""), compress = TRUE)
 }
@@ -160,7 +157,7 @@ load("Step1.RData")
 
 ## Read in saved BIC scores and combine into one object.
 bic.group <- list()
-for(i in unique(groups))
+for(i in seq(nrow(groups)))
 {
   load(paste("bic", i, ".RData", sep = ""))
   bic.group[[i]] <- bic

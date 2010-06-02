@@ -1,0 +1,47 @@
+\name{parallel.qtlnet}
+\alias{parallel.qtlnet}
+%- Also NEED an '\alias' for EACH other topic documented here.
+\title{Code to parallelize use of qtlnet}
+\description{
+This routine calls one of four phases in a parallelized version of qtlnet.
+}
+\usage{
+parallel.qtlnet(dirpath, phase, \dots)
+}
+%- maybe also 'usage' for other objects documented here.
+\arguments{
+  \item{dirpath}{
+Character string for directory were user can read and write files.
+}
+  \item{phase}{
+Phase of parallelization as number 1 through 4. See details.
+}
+  \item{\dots}{
+    Additional arguments for phases. See details.
+  }
+}
+\details{
+  
+}
+\author{
+Brian S. Yandell and Elias Chaibub Neto
+}
+\references{
+Chaibub Neto E, Keller MP, Attie AD, Yandell BS (2010)
+Causal Graphical Models in Systems Genetics: a unified
+framework for joint inference of causal network and
+genetic architecture for correlated phenotypes.
+Ann Appl Statist 4: 320-339.
+\url{http://www.stat.wisc.edu/~yandell/doc/2010/92.AnnApplStat.pdf}
+
+\url{http://www.stat.wisc.edu/~yandell/sysgen/qtlnet}
+}
+\seealso{
+\code{\link{mcmc.qtlnet}}
+}
+\examples{
+  \dontrun{
+    parallel.qtlnet("/u/y/a/yandell/public/html/sysgen/qtlnet/condor", 1)
+  }
+}
+\keyword{ ~kwd1 }

@@ -131,6 +131,8 @@ n.groups
 
 ## NB: Configuration of parallelization determined using Step 1 results.
 
+library(qtlnet) ## depends on R/qtl, R/igraph.
+
 ## Load Step 1 computations.
 load("Step1.RData")
 
@@ -150,6 +152,8 @@ for(i in unique(groups))
 ## NB: n.runs sets the number of parallel runs.
 
 n.runs <- 100
+
+library(qtlnet) ## depends on R/qtl, R/igraph.
 
 ## Load Step 1 computations.
 load("Step1.RData")
@@ -180,6 +184,8 @@ for(i in seq(n.runs))
 ## NB: n.runs needed from Step 3.
 
 n.runs <- 100
+
+library(qtlnet) ## depends on R/qtl, R/igraph.
 
 ## Combine outputs together.
 outs.qtlnet <- list()
