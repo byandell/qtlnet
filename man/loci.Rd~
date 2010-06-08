@@ -7,7 +7,7 @@ Determines QTL that affect each phenotype conditional on the model-averaged
 network and on covariates.
 }
 \usage{
-loci.qtlnet(qtlnet.object, chr.pos = TRUE, merge.qtl = 10, \dots)
+loci.qtlnet(qtlnet.object, chr.pos = TRUE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -16,11 +16,6 @@ Object of class \code{qtlnet}.
 }
   \item{chr.pos}{
 Include chromsome and position if \code{TRUE}.
-}
-  \item{merge.qtl}{
-Merge QTL within \code{merge.qtl} cM of the mean QTL per chromosome
-across all nodes. No merge if 0 or less. This can reduce the number of QTL
-nodes to one per chr.
 }
   \item{\dots}{
 Additional unused arguments.

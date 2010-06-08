@@ -9,9 +9,8 @@
 ## http://www.stat.wisc.edu/~yandell/sysgen/qtlnet/condor
 ##
 ####################################################################################
-parallel.qtlnet <- function(phase, ...)
+parallel.qtlnet <- function(phase, ..., dirpath = ".")
 {
-  dirpath <- "."
   switch(phase,
          qtlnet.phase1(dirpath, ...),
          qtlnet.phase2(dirpath, ...),
@@ -55,6 +54,8 @@ parallel.message <- function(num)
 }
 ####################################################################################
 qtlnet.phase1 <- function(dirpath,
+                          params.file = "params.txt",
+                          cross.file = "cross.RData",
                           cross.name = "cross",
                           pheno.col = 1:13,
                           max.parents = 12,
@@ -62,7 +63,8 @@ qtlnet.phase1 <- function(dirpath,
                           nruns = 100,
                           step = 1,
                           addcov = NULL, intcov = NULL,
-                          nSamples = 1000, thinning = 20, ...)
+                          nSamples = 1000, thinning = 20,
+                          ...)
 {
   ## PHASE 1: Initiation. Needed in phases 2 and 3.
   ##          Fast: Run on scheduler.
@@ -78,10 +80,10 @@ qtlnet.phase1 <- function(dirpath,
   ## The "groups.txt" file is used to determine Phase2 width.
 
   ## Get any parameters in file. These will overwrite passed arguments.
-  eval(parse(file.path(dirpath, "params.txt")))
+  eval(parse(file.path(dirpath, params.file)))
 
   ## Cross object.
-  load(file.path(dirpath, "cross.RData"))
+  load(file.path(dirpath, cross.file))
   if(cross.name != "cross")
     cross <- get(cross.name)
 

@@ -20,21 +20,25 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, ...)
   QTLnodes <- list()
   for(i in 1:le){
     pa <- get.parents(pheno=pheno.nms[i], pheno.net.str=pheno.net.str)
-    pacov.dat <- NULL
-    if(!is.null(pa))
-      pacov.dat <- as.matrix(cross$pheno[, pa, drop = FALSE])
 
-    addcov.dat <- create.cov.matrix(cross, cov.names = unique(c(addcov[[i]], intcov[[i]])))
-    addcov.dat <- cbind(pacov.dat, addcov.dat)
-
-    intcov.dat <- create.cov.matrix(cross, cov.names = intcov[[i]])
-    
     ## Reduce to nonmissing data.
     tmp <- unique(c(i, pa, addcov[[i]], intcov[[i]]))
-    pheno.na <- apply(cross$pheno[, tmp, drop = FALSE], 1, function(x) any(is.na(x)))
+    pheno.na <- apply(cross$pheno[, tmp, drop = FALSE], 1,
+                      function(x) any(is.na(x)))
+    crossi <- subset(cross, ind = !pheno.na)
 
-    ss <- scanone.summary(subset(cross, ind = !pheno.na), i,
-                          addcov.dat, intcov.dat, thr[[i]], method)
+    ## Determine parent covariates.
+    pacov.dat <- NULL
+    if(!is.null(pa))
+      pacov.dat <- as.matrix(crossi$pheno[, pa, drop = FALSE])
+
+    ## Determine additive and interactive covariates.
+    addcov.dat <-
+      create.cov.matrix(crossi, cov.names = unique(c(addcov[[i]], intcov[[i]])))
+    addcov.dat <- cbind(pacov.dat, addcov.dat)
+    intcov.dat <- create.cov.matrix(crossi, cov.names = intcov[[i]])
+    
+    ss <- scanone.summary(crossi, i, addcov.dat, intcov.dat, thr[[i]], method)
 
     markers <- row.names(ss)
     le.markers <- length(markers)
