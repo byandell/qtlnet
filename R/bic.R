@@ -123,7 +123,7 @@ make.saved.scores <- function(pheno.names, max.parents = 3, saved.scores = NULL,
   out
 }
 ######################################################################
-parents.qtlnet <- function(pheno.col, max.parents, codes.only = FALSE)
+parents.qtlnet <- function(pheno.col, max.parents = 3, codes.only = FALSE)
 {
   n.pheno <- length(pheno.col)
   

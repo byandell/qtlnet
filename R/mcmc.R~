@@ -172,6 +172,8 @@ c.qtlnet <- function(...)
   if(length(netlist) > 1) {
     ## Need to do some checking here that qtlnet objects match up.
     ## Minimal for now.
+
+    ## Assumes that parameters stay the same, although nSamples could change.
     
     n.pheno <- length(attr(out, "pheno.col"))
     if(n.pheno != mean(sapply(netlist, function(x) length(attr(x, "pheno.col")))))
@@ -184,13 +186,13 @@ c.qtlnet <- function(...)
 
     for(i in seq(2, length(netlist))) {
       ## Per step summaries.
-      for(j in names(out)[c("post.model","post.bic","all.bic")])
+      for(j in c("post.model","post.bic","all.bic"))
         out[[j]] <- c(out[[j]], netlist[[i]][[j]])
 
       ## Attributes.
-      n1 <- attr(out, "nSamples")
+      n1 <- sum(attr(out, "nSamples"))
       n2 <- attr(netlist[[i]], "nSamples")
-      attr(out, "nSamples") <- n1 + n2
+      attr(out, "nSamples") <- c(attr(out, "nSamples"), n2)
 
       ## Matrices of network structure (3-D array).
       out$post.net.str <- array(c(out$post.net.str, netlist[[i]]$post.net.str),

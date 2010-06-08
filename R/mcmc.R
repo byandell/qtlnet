@@ -3,9 +3,9 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         addcov=NULL, intcov=NULL,
                         nSamples = 1000, thinning=1,
                         max.parents = 3,
-                        M0 = init.qtlnet(pheno.col, max.parents, n.edge),
+                        M0 = init.qtlnet(pheno.col, max.parents, init.edges),
                         burnin = 0.1, method = "hk", random.seed = NULL,
-                        n.edge = 0,
+                        init.edges = 0,
                         saved.scores = NULL,
                         verbose = FALSE, ...)
 {

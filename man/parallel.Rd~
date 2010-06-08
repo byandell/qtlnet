@@ -21,7 +21,15 @@ Phase of parallelization as number 1 through 4. See details.
   }
 }
 \details{
-  
+See \url{http://www.stat.wisc.edu/~yandell/sysgen/qtlnet} for details of
+implementation in progress. The plan is to run qtlnet via Condor
+(\url{http://www.condor.org}) to scale up to larger networks, say up to
+100 nodes. Phase 1 sets up the problem and determines how many
+\code{\link[qtl]{scanone}} calls (via \code{\link{bic.qtlnet}} will be
+needed. Phase 2 runs \code{\link[qtl]{scanone}} in a parallelized
+fashion. Phase 3 runs the MCMC sequence multiple times when done in
+parallel. Phase 4 is the wrapup. There is a Phase 0 to install R/qtl and
+R/qtlnet on cluster machines.
 }
 \author{
 Brian S. Yandell and Elias Chaibub Neto
@@ -37,7 +45,8 @@ Ann Appl Statist 4: 320-339.
 \url{http://www.stat.wisc.edu/~yandell/sysgen/qtlnet}
 }
 \seealso{
-\code{\link{mcmc.qtlnet}}
+\code{\link{mcmc.qtlnet}},
+\code{\link{bic.qtlnet}}
 }
 \examples{
   \dontrun{

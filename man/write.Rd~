@@ -52,7 +52,7 @@ Ann Appl Statist 4: 320-339.
 \url{http://www.stat.wisc.edu/~yandell/doc/2010/92.AnnApplStat.pdf}
 }
 \seealso{
-  \code{\link{igraph.qtlnet}}
+  \code{\link{igrap.qtlnet}}
 }
 \examples{
 write.qtlnet(Pscdbp.qtlnet, "Pscdbp.txt")

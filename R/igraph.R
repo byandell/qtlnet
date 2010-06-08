@@ -2,7 +2,7 @@ plot.qtlnet <- function(x, ...)
 {
   require(igraph)
   
-  gr <- graph.qtlnet(x, ...)
+  gr <- igraph.qtlnet(x, ...)
   tkplot(gr, ...)
   
   invisible(gr)

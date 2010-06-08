@@ -11,7 +11,7 @@ Routines useful for examining the size of node-parent combinations.
 }
 \usage{
 parents.qtlnet(pheno.col, max.parents = 3, codes.only = FALSE)
-\method{summary}{parents}(object, \dots)
+\method{summary}{parents.qtlnet}(object, \dots)
 size.qtlnet(pheno.col, max.parents = 3)
 group.qtlnet(pheno.col, max.parents = 3, n.groups,
   group.size = 1000, parents = parents.qtlnet(pheno.col, max.parents))
@@ -110,6 +110,9 @@ parents <- parents.qtlnet(pheno.col, max.parents)
 n.child <- summary(parents)$n.child
 groups <- group.qtlnet(parents = parents, group.size = 1000)
 tapply(n.child, groups, sum)
+apply(groups, 1,
+      function(group, parents) sapply(parents[seq(group[1], group[2])], length),
+      parents)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

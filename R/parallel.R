@@ -9,39 +9,87 @@
 ## http://www.stat.wisc.edu/~yandell/sysgen/qtlnet/condor
 ##
 ####################################################################################
-parallel.qtlnet <- function(dirpath = "/u/y/a/yandell/public/html/sysgen/qtlnet/condor",
-                            phase, ...)
+parallel.qtlnet <- function(phase, ..., dirpath = ".")
 {
   switch(phase,
          qtlnet.phase1(dirpath, ...),
          qtlnet.phase2(dirpath, ...),
          qtlnet.phase3(dirpath, ...),
          qtlnet.phase4(dirpath, ...),
-         stop("only 4 phases installed"))
+         qtlnet.phase5(dirpath, ...),
+         parallel.error(1))
+  
+  parallel.error(0)
+}
+parallel.error <- function(num)
+{
+  ## See file errorcodes.txt for explanation.
+  write.table(num, file = "RESULT",
+              quote = FALSE, row.names = FALSE, col.names = FALSE)
+  if(num)
+    stop(parallel.message(num))
+
+  invisible()
+}
+parallel.message <- function(num)
+{
+  msg <- as.matrix(c("OK",
+                     "phase number not between 1 and 5",
+                     "index to groups must be supplied as line number for file groups.txt",
+                     "index to groups must be integer (line number for file groups.txt)",
+                     "index to groups must be between 1 and number of lines in groups.txt",
+                     "no bic RData files found",
+                     "index to MCMC runs must be supplied",
+                     "index to groups must be integer",
+                     "index to groups must be between 1 and nruns",
+                     "no MCMC RData files found",
+                     "number of MCMC runs does not match nruns",
+                     "number of BIC runs does not match groups"))
+  dimnames(msg)[[1]] <- seq(0, nrow(msg) - 1)
+  if(missing(num))
+    write.table(msg, file = "errorcodes.txt",
+              quote = FALSE, col.names = FALSE)
+  else
+    msg[as.character(num), 1]
 }
 ####################################################################################
 qtlnet.phase1 <- function(dirpath,
-                         cross = Pscdbp,
-                         pheno.col = 1:13,
-                         max.parents = 12,
-                         threshold = 3.83,
-                         step = 1, ...)
+                          params.file = "params.txt",
+                          cross.file = "cross.RData",
+                          cross.name = "cross",
+                          pheno.col = 1:13,
+                          max.parents = 12,
+                          threshold = 3.83,
+                          nruns = 100,
+                          step = 1,
+                          addcov = NULL, intcov = NULL,
+                          nSamples = 1000, thinning = 20,
+                          ...)
 {
-  ## PHASE 1: Preparation. Fast. Needed in phases 2 and 3.
+  ## PHASE 1: Initiation. Needed in phases 2 and 3.
+  ##          Fast: Run on scheduler.
   ##
   ## Input files:
   ##       cross.RData
+  ##       params.txt
+  ##
   ## Output files:
   ##       Phase1.RData
   ##       groups.txt
   ##
   ## The "groups.txt" file is used to determine Phase2 width.
-  
+
+  ## Get any parameters in file. These will overwrite passed arguments.
+  eval(parse(file.path(dirpath, params.file)))
+
+  ## Cross object.
+  load(file.path(dirpath, cross.file))
+  if(cross.name != "cross")
+    cross <- get(cross.name)
+
   ## Calculate genotype probabilities if not already done.
-  if (!("prob" %in% names(cross$geno[[1]]))) {
-    warning("First running calc.genoprob.")
+  if (!("prob" %in% names(cross$geno[[1]])))
     cross <- calc.genoprob(cross, step = step)
-  }
   
   ## Break up into groups to run on several machines.
   ## 54 groups of ~1000, for a total of 53248 scanone runs.
@@ -49,66 +97,73 @@ qtlnet.phase1 <- function(dirpath,
   groups <- group.qtlnet(parents = parents, group.size = 1000)
   
   ## Save all relevant objects for later phases.
-  save(cross, pheno.col, max.parents, threshold, parents, groups,
-       file = file.path(dirpath, "Phase1.RData"), compress = TRUE)
+  save(cross, pheno.col, max.parents, threshold, parents, groups, nruns,
+       addcov, intcov, nSamples, thinning,
+       file = file.path(dirpath, "Phase1.RData"),
+       compress = TRUE)
   
   ## Need to write a file with n.groups lines and group.size columns.
   write.table(groups,
               file = file.path(dirpath, "groups.txt"),
               row.names = FALSE, col.names = FALSE, quote = FALSE)
-
-  invisible()
 }
 ####################################################################################
-qtlnet.phase2 <- function(dirpath, groups.1, groups.2, ...)
+qtlnet.phase2 <- function(dirpath, index, ...)
 {
   ## PHASE 2: Compute BIC scores. Parallelize.
+  ##          Slow. Run on condor nodes.
   ##
   ## Input files:
   ##       Phase1.RData
   ##
   ## Output file (one per invocation):
-  ##       bicXXX.RData
+  ##       bicN.RData (with N = index)
+  ##
+  ## Argument:
+  ##       index (1 to number of lines in groups.txt file)
   ##
   ## The "groups.txt" file (created in Phase1) is used to determine Phase2 width.
   ## That is, groups.txt has 54 lines, hence 54 separate condor runs
   ## to produce bic1.RData through bic54.RData.
   
-  ## Assume PERL script gives values groups.1 and groups.2
-  ## from a line of the file "groups.txt".
-
   ## Load Phase 1 computations.
   load(file.path(dirpath, "Phase1.RData"))
 
-  if(missing(groups.1) | missing(groups.2))
-    stop("groups.1 and groups.2 must be supplied (from line of file groups.txt")
+  ## Quality check of index.
+  if(missing(index))
+    parallel.error(2)
+  index <- as.integer(index)
+  if(is.na(index))
+    parallel.error(3)
+  if(index < 1 | index > nrow(groups))
+    parallel.error(4)
 
   ## Pre-compute BIC scores for selected parents.
   bic <- bic.qtlnet(cross, pheno.col, threshold,
                     max.parents = max.parents,
-                    parents = parents[seq(groups.1, groups.2)],
+                    parents = parents[seq(groups[index,1], groups[index,2])],
                     ...)
   
   save(bic,
-       file = paste(tempfile("bic", dirpath), ".RData", sep = ""),
+       file = file.path(dirpath, paste("bic", index, ".RData", sep = "")),
        compress = TRUE)
-
-  invisible()
 }
 ####################################################################################
 qtlnet.phase3 <- function(dirpath, ...)
 {
   ## PHASE 3: Sample Markov chain (MCMC). Parallelize.
+  ##          Fast: Run on scheduler.
+  ##          Slow. Run on condor nodes.
   ##
   ## Input files:
   ##       Phase1.RData
-  ##       bicXXX.RData (actual names will use temporary strings in place of XXX)
+  ##       bicN.RData (multiple files with N = 1,...,nrow(groups))
   ##
   ## Output files (one per invocation):
-  ##       mcmcXXX.RData (actual names will use temporary strings for XXX)
+  ##       Phase3.RData
   ##
-  ## See Phase2 for explanation of "bic*.RData" files.
-  ## All "bic.*RData" files in "dirpath" are combined.
+  ## See Phase 2 for explanation of bicN.RData files.
+  ## All bicN.RData files are combined to make saved.scores.
 
   ## Load Phase 1 computations.
   load(file.path(dirpath, "Phase1.RData"))
@@ -118,44 +173,87 @@ qtlnet.phase3 <- function(dirpath, ...)
   ## Read in saved BIC scores and combine into one object.
   filenames <- list.files(dirpath, "bic.*RData")
   if(!length(filenames))
-    stop(paste("no bic RData files found in", dirpath))
+    parallel.error(5)
+  if(length(filenames) != nrow(groups))
+    parallel.error(11)
   
   bic.group <- list()
   for(i in seq(length(filenames))) {
     load(file.path(dirpath, filenames[i]))
+
+    ## Do any quality checking here.
+    
     bic.group[[i]] <- bic
   }
+  
   saved.scores <- bic.join(cross, pheno.col, bic.group)
+  save(saved.scores,
+       file = file.path(dirpath, "Phase3.RData"),
+       compress = TRUE)
+}
+####################################################################################
+qtlnet.phase4 <- function(dirpath, index, ...)
+{
+  ## PHASE 4: Sample Markov chain (MCMC). Parallelize.
+  ##          Slow. Run on condor nodes.
+  ##
+  ## Input files:
+  ##       Phase1.RData
+  ##       Phase3.RData
+  ##
+  ## Output files (one per invocation):
+  ##       mcmcN.RData (actual names will use temporary strings for XXX)
 
-  ## This is the phase to parallelize.
+  ## Load Phase 1 computations.
+  load(file.path(dirpath, "Phase1.RData"))
+
+  ## Load Phase 3 computations (saved.scores).
+  load(file.path(dirpath, "Phase3.RData"))
+
+  ## Quality check of index.
+  if(missing(index))
+    parallel.error(6)
+  index <- as.integer(index)
+  if(is.na(index))
+    parallel.error(7)
+  if(index < 1 | index > nruns)
+    parallel.error(8)
+
   ## Run MCMC with randomized initial network.
   mcmc <- mcmc.qtlnet(cross, pheno.col, threshold = threshold,
                       max.parents = max.parents,
                       saved.scores = saved.scores, init.edges = NULL,
+                      addcov = addcov, intcov = intcov,
+                      nSamples = nSamples, thinning = thinning,
                       ...)
   save(mcmc,
-       file = paste(tempfile("mcmc", dirpath), ".RData", sep = ""),
+       file = file.path(dirpath, paste("mcmc", index, ".RData", sep = "")),
        compress = TRUE)
-
-  invisible()
 }
 ####################################################################################
-qtlnet.phase4 <- function(dirpath, ...)
+qtlnet.phase5 <- function(dirpath, ...)
 {
-  ## PHASE 4: Combine results for post-processing.
+  ## PHASE 5: Combine results for post-processing.
+  ##          Fast: Run on scheduler.
   ##
   ## Input files (results of Phase 3):
-  ##       mcmcXXX.RData (actual names will use temporary strings in place of XXX
+  ##       Phase1.RData
+  ##       mcmcN.RData (N = 1, ..., nruns)
   ##
   ## Output files:
-  ##       out.qtlnet.RData
+  ##       Final.RData
   ##
-  ## All "mcmc.*RData" files in "dirpath" are combined.
+  ## All "mcmc.*RData" files in "dirpath" are combined to creat output file.
+
+  ## Load Phase 1 computations.
+  load(file.path(dirpath, "Phase1.RData"))
 
   ## Combine outputs together.
   filenames <- list.files(dirpath, "mcmc.*RData")
   if(!length(filenames))
-    stop(paste("no mcmc RData files found in", dirpath))
+    parallel.error(9)
+  if(length(filenames) != nruns)
+    parallel.error(10)
   
   outs.qtlnet <- list()
   for(i in seq(length(filenames))) {
@@ -166,8 +264,6 @@ qtlnet.phase4 <- function(dirpath, ...)
   out.qtlnet <- c.qtlnet(outs.qtlnet)
 
   save(out.qtlnet,
-       file = file.path(dirpath, "out.qtlnet.RData"),
+       file = file.path(dirpath, "Final.RData"),
        compress = TRUE)
-
-  out.qtlnet
 }

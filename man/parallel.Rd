@@ -6,19 +6,24 @@
 This routine calls one of four phases in a parallelized version of qtlnet.
 }
 \usage{
-parallel.qtlnet(dirpath, phase, \dots)
+parallel.qtlnet(phase, \dots, dirpath = ".")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{dirpath}{
-Character string for directory were user can read and write files.
-}
   \item{phase}{
 Phase of parallelization as number 1 through 4. See details.
 }
   \item{\dots}{
     Additional arguments for phases. See details.
   }
+  \item{dirpath}{
+Character string for directory were user can read and write files. When
+submitting to a cluster, this should remain the default.
+}
+Phase 1 optional arguments:
+\item{cross.file}{Name of \code{RData} file to be loaded; contains cross
+  object with name \code{cross.name}.}
+\item{cross.name}{Name of cross object loaded from \code{cross.file}.}
 }
 \details{
 See \url{http://www.stat.wisc.edu/~yandell/sysgen/qtlnet} for details of
