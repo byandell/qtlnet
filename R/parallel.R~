@@ -186,7 +186,7 @@ qtlnet.phase3 <- function(dirpath, ...)
     bic.group[[i]] <- bic
   }
   
-  saved.scores <- bic.join(cross, pheno.col, bic.group)
+  saved.scores <- bic.join(cross, pheno.col, bic.group, max.parents = max.parents)
   save(saved.scores,
        file = file.path(dirpath, "Phase3.RData"),
        compress = TRUE)

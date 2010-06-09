@@ -6,13 +6,17 @@
 This routine calls one of four phases in a parallelized version of qtlnet.
 }
 \usage{
-parallel.qtlnet(phase, \dots, dirpath = ".")
+parallel.qtlnet(phase, index = NULL, \dots, dirpath = ".")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{phase}{
 Phase of parallelization as number 1 through 4. See details.
 }
+  \item{index}{
+    Index for phase. Used in phases 2 and 4, and for error codes saved
+    in \code{RESULT.phase.index} file.
+  }
   \item{\dots}{
     Additional arguments for phases. See details.
   }

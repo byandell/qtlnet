@@ -9,22 +9,26 @@
 ## http://www.stat.wisc.edu/~yandell/sysgen/qtlnet/condor
 ##
 ####################################################################################
-parallel.qtlnet <- function(phase, ..., dirpath = ".")
+parallel.qtlnet <- function(phase, index = 1, ..., dirpath = ".")
 {
   switch(phase,
-         qtlnet.phase1(dirpath, ...),
-         qtlnet.phase2(dirpath, ...),
-         qtlnet.phase3(dirpath, ...),
-         qtlnet.phase4(dirpath, ...),
-         qtlnet.phase5(dirpath, ...),
-         parallel.error(1))
+         qtlnet.phase1(dirpath, index, ...),
+         qtlnet.phase2(dirpath, index, ...),
+         qtlnet.phase3(dirpath, index, ...),
+         qtlnet.phase4(dirpath, index, ...),
+         qtlnet.phase5(dirpath, index, ...),
+         parallel.error(1, phase, index))
   
-  parallel.error(0)
+  parallel.error(0, phase, index)
 }
-parallel.error <- function(num)
+parallel.error <- function(num, phase = 0, index = 1)
 {
   ## See file errorcodes.txt for explanation.
-  write.table(num, file = "RESULT",
+  if(phase == 5)
+    outname <- "RESULT"
+  else
+    outname <- paste("RESULT", phase, index, sep = ".")
+  write.table(num, file = outname,
               quote = FALSE, row.names = FALSE, col.names = FALSE)
   if(num)
     stop(parallel.message(num))
@@ -53,7 +57,7 @@ parallel.message <- function(num)
     msg[as.character(num), 1]
 }
 ####################################################################################
-qtlnet.phase1 <- function(dirpath,
+qtlnet.phase1 <- function(dirpath, index = NULL,
                           params.file = "params.txt",
                           cross.file = "cross.RData",
                           cross.name = "cross",
@@ -108,7 +112,7 @@ qtlnet.phase1 <- function(dirpath,
               row.names = FALSE, col.names = FALSE, quote = FALSE)
 }
 ####################################################################################
-qtlnet.phase2 <- function(dirpath, index, ...)
+qtlnet.phase2 <- function(dirpath, index = NULL, ...)
 {
   ## PHASE 2: Compute BIC scores. Parallelize.
   ##          Slow. Run on condor nodes.
@@ -122,7 +126,7 @@ qtlnet.phase2 <- function(dirpath, index, ...)
   ## Argument:
   ##       index (1 to number of lines in groups.txt file)
   ##
-  ## The "groups.txt" file (created in Phase1) is used to determine Phase2 width.
+  ## The "groups.txt" file (created in Phase1) is used to determine Phase 2 width.
   ## That is, groups.txt has 54 lines, hence 54 separate condor runs
   ## to produce bic1.RData through bic54.RData.
   
@@ -131,12 +135,12 @@ qtlnet.phase2 <- function(dirpath, index, ...)
 
   ## Quality check of index.
   if(missing(index))
-    parallel.error(2)
+    parallel.error(2, 2, index)
   index <- as.integer(index)
   if(is.na(index))
-    parallel.error(3)
+    parallel.error(3, 2, index)
   if(index < 1 | index > nrow(groups))
-    parallel.error(4)
+    parallel.error(4, 2, index)
 
   ## Pre-compute BIC scores for selected parents.
   bic <- bic.qtlnet(cross, pheno.col, threshold,
@@ -149,7 +153,7 @@ qtlnet.phase2 <- function(dirpath, index, ...)
        compress = TRUE)
 }
 ####################################################################################
-qtlnet.phase3 <- function(dirpath, ...)
+qtlnet.phase3 <- function(dirpath, index = NULL, ...)
 {
   ## PHASE 3: Sample Markov chain (MCMC). Parallelize.
   ##          Fast: Run on scheduler.
@@ -173,9 +177,9 @@ qtlnet.phase3 <- function(dirpath, ...)
   ## Read in saved BIC scores and combine into one object.
   filenames <- list.files(dirpath, "bic.*RData")
   if(!length(filenames))
-    parallel.error(5)
+    parallel.error(5, 3, index)
   if(length(filenames) != nrow(groups))
-    parallel.error(11)
+    parallel.error(11, 3, index)
   
   bic.group <- list()
   for(i in seq(length(filenames))) {
@@ -192,7 +196,7 @@ qtlnet.phase3 <- function(dirpath, ...)
        compress = TRUE)
 }
 ####################################################################################
-qtlnet.phase4 <- function(dirpath, index, ...)
+qtlnet.phase4 <- function(dirpath, index = NULL, ...)
 {
   ## PHASE 4: Sample Markov chain (MCMC). Parallelize.
   ##          Slow. Run on condor nodes.
@@ -212,12 +216,12 @@ qtlnet.phase4 <- function(dirpath, index, ...)
 
   ## Quality check of index.
   if(missing(index))
-    parallel.error(6)
+    parallel.error(6, 4, index)
   index <- as.integer(index)
   if(is.na(index))
-    parallel.error(7)
+    parallel.error(7, 4, index)
   if(index < 1 | index > nruns)
-    parallel.error(8)
+    parallel.error(8, 4, index)
 
   ## Run MCMC with randomized initial network.
   mcmc <- mcmc.qtlnet(cross, pheno.col, threshold = threshold,
@@ -231,7 +235,7 @@ qtlnet.phase4 <- function(dirpath, index, ...)
        compress = TRUE)
 }
 ####################################################################################
-qtlnet.phase5 <- function(dirpath, ...)
+qtlnet.phase5 <- function(dirpath, index = NULL, ...)
 {
   ## PHASE 5: Combine results for post-processing.
   ##          Fast: Run on scheduler.
@@ -251,9 +255,9 @@ qtlnet.phase5 <- function(dirpath, ...)
   ## Combine outputs together.
   filenames <- list.files(dirpath, "mcmc.*RData")
   if(!length(filenames))
-    parallel.error(9)
+    parallel.error(9, 5, index)
   if(length(filenames) != nruns)
-    parallel.error(10)
+    parallel.error(10, 5, index)
   
   outs.qtlnet <- list()
   for(i in seq(length(filenames))) {
