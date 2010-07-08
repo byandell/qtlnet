@@ -2,7 +2,7 @@
 ## This creates object of class igraph.
 write.qtlnet <- function(x,
                          filename,
-                         edges = get.averaged.net(x, ...),
+                         edges = get.averaged.net(x),
                          loci.list = loci.qtlnet(x, ...),
                          include.qtl=TRUE,
                          digits = 3,

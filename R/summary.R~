@@ -13,9 +13,9 @@ print.qtlnet <- function(x, cutoff = 0.01, digits = 3, ...)
   invisible(list(mav = mav, pp = pp))
 }  
 ######################################################################
-threshold.net <- function(qtlnet.object,
+threshold.net <- function(qtlnet,
                           mav = get.model.average(qtlnet.object),
-                          min.prob = 0.5, ...)
+                          min.prob = 1/3, ...)
 {
   ## This finds the directed edge (or none) that has highest post.prob.
   ## There may be two problems:
@@ -50,9 +50,9 @@ threshold.net <- function(qtlnet.object,
 ######################################################################
 get.averaged.net <- function(qtlnet.object,
                              pheno.names = attr(qtlnet.object, "pheno.names"),
-                             min.prob = 0.5, ...)
+                             ...)
 {
-  new <- threshold.net(qtlnet.object, min.prob = min.prob, ...)
+  new <- threshold.net(qtlnet.object, ...)
   out <- M.2.lista(new, pheno.names)
   attr(out, "min.prob") <- min.prob
 

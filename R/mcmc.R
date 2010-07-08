@@ -49,8 +49,10 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     warning("First running calc.genoprob.")
     cross <- calc.genoprob(cross)
   }
+
+  Mav <- matrix(0, n.pheno, n.pheno)
+  n.burnin <- burnin * nSamples * thinning
   
-  post.net.str <- array(dim=c(n.pheno,n.pheno,nSamples))
   post.bic <- rep(NA,nSamples)
   post.model <- rep(NA,nSamples)
   all.bic <- rep(NA,nSamples)
@@ -70,15 +72,14 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   codes <- dimnames(saved.scores)[[1]]
   if(!is.null(tmp)) {
     index <- nrow(saved.scores)
-    index <- match(tmp[,1], codes) + index * (tmp[,2] - 1)
-    saved.scores[index] <- tmp[,3]
+    index <- match(as.character(tmp$code), codes) + index * (tmp$pheno.col - 1)
+    saved.scores[index] <- tmp$bic
   }
   model.old <- aux.new$model.name
 
   k <- 0
   if(thinning <= 1) {
     post.bic[1] <- all.bic[1] <- bic.old
-    post.net.str[,,1] <- M.old
     post.model[1] <- model.old
     k <- 1
   }
@@ -94,11 +95,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     tmp <- aux.new$update.scores
     if(!is.null(tmp)) {
       index <- nrow(saved.scores)
-      tmp2 <- match(tmp[,1], codes)
-      if(any(is.na(tmp2)))
-         browser()
-      index <- match(tmp[,1], codes) + index * (tmp[,2] - 1)
-      saved.scores[index] <- tmp[,3]
+      index <- match(as.character(tmp$code), codes) + index * (tmp$pheno.col - 1)
+      saved.scores[index] <- tmp$bic
     }
 
     bic.new <- aux.new$model.score
@@ -114,19 +112,26 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
       cont.accept <- cont.accept + 1
     }
 
+    ## Accumulate M's for average.
+    if(i > n.burnin)
+      Mav <- Mav + M.old
+    
     ## Bookkeeping to save sample.
     if((i %% thinning) == 0){      
       k <- k + 1
       all.bic[k] <- bic.new
       post.bic[k] <- bic.old
-      post.net.str[,,k] <- M.old
       post.model[k] <- model.old
       if(verbose) print(c(i,k)) 
     }
-  }           
-  out <- list(post.model=post.model,
-              post.bic=post.bic, 
-              post.net.str=post.net.str, 
+  }
+
+  ## Make average here.
+  Mav <- Mav / (nSamples * thinning - n.burnin)
+  
+  out <- list(post.model = post.model,
+              post.bic = post.bic, 
+              Mav = Mav,
               freq.accept = cont.accept / (nSamples * thinning), 
               saved.scores=saved.scores,
               all.bic=all.bic,
@@ -146,9 +151,6 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   attr(out, "random.seed") <- random.seed
   attr(out, "random.kind") <- RNGkind()
 
-  ## Add model average calculation.
-  out$model.average <- qtlnet.average(out, burnin = burnin)
-
   class(out) <- c("qtlnet","list")
   
   out
@@ -157,8 +159,6 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
 c.qtlnet <- function(...)
 {
   ## Combine qtlnet objects.
-  ## Might be useful to have summary that just pulls out the model averages.
-  ## Also need to think carefully about burnin--what does it mean here?
   
   netlist <- list(...)
   out <- netlist[[1]]
@@ -169,20 +169,27 @@ c.qtlnet <- function(...)
   if(!inherits(out, "qtlnet"))
     stop("argument must be list of qtlnet objects")
   
+  burnin <- attr(out, "burnin")
+  n.pheno <- length(attr(out, "pheno.col"))
+  
   if(length(netlist) > 1) {
     ## Need to do some checking here that qtlnet objects match up.
     ## Minimal for now.
 
     ## Assumes that parameters stay the same, although nSamples could change.
-    
-    n.pheno <- length(attr(out, "pheno.col"))
+
     if(n.pheno != mean(sapply(netlist, function(x) length(attr(x, "pheno.col")))))
       stop("different numbers of phenotypes not allowed")
     if(attr(out, "thinning") != mean(sapply(netlist, function(x) attr(x, "thinning"))))
       stop("thinning values differ")
     ## check threshold vector.
-    if(!all(attr(out, "threshold") == apply(sapply(netlist, function(x) attr(x, "threshold")), 1, mean)))
+    if(!all(attr(out, "threshold") == apply(sapply(netlist,
+                  function(x) attr(x, "threshold")), 1, mean)))
       stop("threshold values differ")
+    if(!all(burnin == sapply(netlist, function(x) attr(x, "burnin"))))
+      stop("burnin values differ")
+
+    out$Msd <- 0
 
     for(i in seq(2, length(netlist))) {
       ## Per step summaries.
@@ -192,15 +199,24 @@ c.qtlnet <- function(...)
       ## Attributes.
       n1 <- sum(attr(out, "nSamples"))
       n2 <- attr(netlist[[i]], "nSamples")
+      n <- n1 + n2
       attr(out, "nSamples") <- c(attr(out, "nSamples"), n2)
 
-      ## Matrices of network structure (3-D array).
-      out$post.net.str <- array(c(out$post.net.str, netlist[[i]]$post.net.str),
-                                c(n.pheno, n.pheno, n1 + n2))
+      ## Matrix of average network structure and SD among multiple runs.
+      ## Msd is computed for upper - lower triangle
+      fold <- function(x) {
+        low <- lower.tri(x)
+        t(x)[low] - x[low]
+      }
+      tmp <- n1 * fold(out$Mav) ^ 2
+      out$Mav <- (n1 * out$Mav + n2 * netlist[[i]]$Mav) / n
+      tmp <- tmp - n * fold(out$Mav) ^ 2
+      out$Msd <- (n1 * out$Msd + n2 * fold(netlist[[i]]$Mav) ^ 2 + tmp) / n
+      
       ## Acceptance frequency.
-      out$freq.accept <- (n1 * out$freq.accept + n2 * netlist[[i]]$freq.accept) / (n1 + n2)
+      out$freq.accept <- (n1 * out$freq.accept + n2 * netlist[[i]]$freq.accept) / n
     }
-    out$model.average <- qtlnet.average(out, burnin = attr(out, "burnin"))
+    out$Msd <- sqrt(out$Msd)
   }
   out
 }
@@ -350,6 +366,42 @@ forbidden.additions <- function(M, node, max.parents = 3)
   list(upf=upf, downf=downf)
 } 
 ######################################################################
+check.qtlnet <- function(object,
+                         min.prob = 0.5,
+                         correct = TRUE,
+                         verbose = FALSE,
+                         ...)
+{
+  pheno.names <- attr(object, "pheno.names")
+  n.pheno <- length(pheno.names)
+
+  forbid <- 1
+  while(!is.null(forbid)) {
+    M <- threshold.net(object, min.prob = min.prob, ...)
+    M1 <- 1 * (M > 0)
+
+    ## This may not be right yet.
+    forbid <- NULL
+    for(i in seq(n.pheno)) {
+      downf <- check.downstream(M1, i)
+      wh <- which(M1[i, downf] == 1)
+      if(length(wh))
+        forbid <- rbind(forbid, cbind(downf[wh],i, M[i, downf[wh]]))
+    }
+    if(!is.null(forbid)) {
+      forbid <- data.frame(forbid)
+      names(forbid) <- c("cause","react","prob")
+      for(i in 1:2)
+        forbid[[i]] <- ordered(pheno.names[forbid[[i]]], pheno.names)
+    }
+    if(verbose)
+      print(forbid)
+  }
+  attr(M, "min.prob") <- min.prob
+  
+  list(forbid = forbid, M = M)
+}
+######################################################################
 check.downstream <- function(M, downf)
 {
   ## After accounting for scanone, 85% of time is nbhd.size.
@@ -418,4 +470,17 @@ check.reversions <- function(M, node, max.parents = 3)
   }
     
   list(allowed = allowed, forbidden = forbidden)   
+}
+##########################################################################
+legacy.qtlnet <- function(qtlnet.object, codes = TRUE)
+{
+  ## Convert old qtlnet object to current format. Idempotent.
+  
+  qtlnet.object$Mav <- get.model.average(qtlnet.object)
+  qtlnet.object$post.net.str <- NULL
+  qtlnet.object$model.average <- NULL
+  if(codes)
+    dimnames(qtlnet.object$saved.scores)[[1]] <-
+      legacy.code(dimnames(qtlnet.object$saved.scores)[[1]])
+  qtlnet.object
 }

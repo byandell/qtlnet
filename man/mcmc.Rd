@@ -105,8 +105,7 @@ Additional arguments. Advanced users may want to supply pre-computed
   List of class \code{qtlnet}
   \item{post.model}{Model code (see details).}
   \item{post.bic}{Posterior BIC}
-  \item{post.net.str}{3-D array with \code{M} matrix for each of the
-    \code{nSamples} values of third dimension.}
+  \item{Mav}{Model average of \code{M} across MCMC samples.}
   \item{freq.accept}{Frequency of acceptance M-H proposals.}
   \item{saved.scores}{Saved LOD score for each phenotype and all
     possible sets of the other phenotypes as parent nodes.}

@@ -1,5 +1,4 @@
 \name{summary.qtlnet}
-\alias{check.qtlnet}
 \alias{print.qtlnet}
 \alias{summary.qtlnet}
 \alias{print.summary.qtlnet}
@@ -11,36 +10,26 @@ Print and summary methods for qtlnet objects.
 \method{print}{qtlnet}(x, cutoff = 0.01, digits = 3, \dots)
 \method{summary}{qtlnet}(object, parent.patterns = FALSE, \dots)
 \method{print}{summary.qtlnet}(x, \dots)
-check.qtlnet(object, min.prob = 0.5, correct = TRUE, verbose = FALSE, \dots)
 }
 \arguments{
   \item{x,object}{
-    Object of class \code{qtlnet}.
-  }
+Object of class \code{qtlnet}.
+}
   \item{cutoff}{
-    Frequency cutoff for model patterns to be displayed. Always shows at
-    least the most common pattern.
-  }
+Frequency cutoff for model patterns to be displayed. Always shows at
+least the most common pattern.
+}
   \item{digits}{
-    Number of digits to display for posterior probabilities on directed edges.
-  }
+Number of digits to display for posterior probabilities on directed edges.
+}
   \item{parent.patterns}{
-    Include summary of parent patterns if \code{TRUE}.
-  }
-  \item{min.prob}{
-    Set the minimum posterior probability for inclusion of an edge.
-  }
-  \item{correct}{
-    Correct \code{min.prob} if \code{TRUE}.
-  }
-  \item{verbose}{
-    Print forbidden edges in model-averaged solution if \code{TRUE}.
-  }
+Include summary of parent patterns if \code{TRUE}.
+}
   \item{\dots}{
-    Other hidden arguments. These include \code{min.prob}, which
-    can also be passed to other \code{\link{igraph.qtlnet}} and
-    \code{\link{plot.qtlnet}} routines.
-  }
+Other arguments. These include \code{min.prob}, which will set the
+minimum posterior probability for inclusion of an edge. [This argument
+can also be used for other graph and plot routines.]
+}
 }
 \author{
 Brian S. Yandell and Elias Chaibub Neto

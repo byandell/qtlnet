@@ -12,7 +12,7 @@ graph.qtlnet <- function(x, ...) igraph.qtlnet(x, ...)
 ###################################################################
 ## This creates object of class igraph.
 igraph.qtlnet <- function(x,
-                         edges = summary(x, ...)$averaged.net,
+                         edges = get.averaged.net(x, ...),
                          loci.list = loci.qtlnet(x, ...),
                          pheno.color="green", qtl.color="red",
                          vertex.color = node.color,

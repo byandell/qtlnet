@@ -16,6 +16,7 @@
 export(c.qtlnet)
 export(bic.join)
 export(bic.qtlnet)
+export(check.qtlnet)
 export(graph.qtlnet)
 export(group.qtlnet)
 export(igraph.qtlnet)

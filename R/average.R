@@ -1,62 +1,59 @@
-qtlnet.average <- function(qtlnet.object, burnin = 0)
+get.model.average <- function(qtlnet.object)
 {
-  ## Need to be careful here as samples may be from multiple runs.
-  ## Assume burnin is treated the same for all cases.
-  ## This is actually the only place burnin is used.
-  
-  n <- attr(qtlnet.object, "nSamples")
-  post.burnin <- which(apply(matrix(n), 1, function(x,b) seq(x) >= b * x, burnin))
-  nSamples <- length(post.burnin)
-  
-  pp <- get.posterior.prob(qtlnet.object, post.burnin)
-  aux.pp <- rep(NA,nSamples)
-  le <- nrow(pp)
-  pheno.names <- attr(qtlnet.object, "pheno.names")
-  np <- length(pheno.names)
-  unique.str <- array(dim=c(np,np,le))
+  mav <- qtlnet.object$Mav
+  if(is.null(mav)) {
+    post.burnin <- get.post.burnin(qtlnet.object)
 
-  mav <- matrix(NA,np,np)
-  dimnames(mav) <- list(pheno.names, pheno.names)
-  for(i in 1:le){
-    aux1 <- pp[i,1]
-    aux2 <- post.burnin[which(qtlnet.object$post.model[post.burnin] == aux1)[1]]
-    unique.str[,,i] <- qtlnet.object$post.net.str[,,aux2]*pp[i,2]
-  } 
-  out <- data.frame(matrix(NA,(np^2)-np, 2))
-  names(out) <- c("arc","Posterior")
-  k <- 1
-  for(i in 1:np){
-    for(j in 1:np){
-      mav[i,j] <- sum(unique.str[i,j,])
-      if(i != j){
-        out[k,1] <- paste(i, paste("-->",j,sep=" "), sep=" ")
-        out[k,2] <- mav[i,j]
-        k <- k + 1
-      }
-    }
+    mav <- apply(qtlnet.object$post.net.str[,,post.burnin], c(1,2), mean)
+    pheno.names <- attr(qtlnet.object, "pheno.names")
+    dimnames(mav) <- list(pheno.names, pheno.names)
   }
-  aux.o <- order(out[,2],decreasing=TRUE)
-  out <- out[aux.o,]
-  row.names(out) <- c(1:((np^2)-np))  
-  list(mav=mav,out=out,pp=pp)
+  mav
 }
-######################################################################
-get.posterior.prob <- function(qtlnet.object, post.burnin)
+##########################################################################
+get.post.burnin <- function(qtlnet.object)
 {
-  nSamples <- length(post.burnin)
-
-  sampled.models <- unique(qtlnet.object$post.model[post.burnin])
-  le <- length(sampled.models)
-  post.prob <- data.frame(matrix(NA,le,3))
-  names(post.prob) <- c("Model","Posterior prob","BIC")
-  post.prob[,1] <- sampled.models
-  for(i in 1:le){
-    wh <- which(qtlnet.object$post.model[post.burnin] == sampled.models[i])
-    post.prob[i,2] <- length(wh)/nSamples
-    post.prob[i,3] <- mean(qtlnet.object$post.bic[post.burnin][wh])
+  burnin <- attr(qtlnet.object, "burnin")
+  nSamples <- attr(qtlnet.object, "nSamples")
+  which(apply(matrix(nSamples), 1,
+              function(x,b) seq(x) >= b * x, burnin))
+}
+##########################################################################
+get.posterior.prob <- function(qtlnet.object)
+{
+  post.burnin <- get.post.burnin(qtlnet.object)
+  post.model <- qtlnet.object$post.model[post.burnin]
+  post.bic <- qtlnet.object$post.bic[post.burnin]
+  
+  out <- data.frame(post.prob = as.vector(table(post.model)) / length(post.model),
+               BIC  = tapply(post.bic, post.model, mean))
+  out[order(-out$post.prob, out$BIC),]
+}
+##########################################################################
+## Need to condense qtlnet object.
+## First, get rid of post.net.str.
+## Could have utility to translate post.model to post.net.str.
+##########################################################################
+model2M <- function(post.model)
+{
+  ## Convert post.model into 3-D M array.
+  
+  ## Strip out parentheses and split by node.
+  a <- strsplit(substring(model, 2, nchar(model) - 1), ")(", fixed = TRUE)
+  nSamples <- length(a)
+  n.pheno <- length(a[[1]])
+  phenos <- rep(0, n.pheno)
+  asplit <- function(a, phenos = length(a)) {
+    a1 <- strsplit(a, "|", fixed = TRUE)
+    a2 <- sapply(a1, function(x, phenos)
+                 {
+                   if(length(x) == 2) {
+                     xx <- as.numeric(strsplit(x[2], ",", fixed = TRUE)[[1]])
+                     phenos[xx] <- 1
+                   }
+                   phenos
+                 }, phenos)
+    a2
   }
-  aux <- order(post.prob[,2],decreasing=TRUE)
-  post.prob <- post.prob[aux,]
-  row.names(post.prob) <- c(1:le)
-  post.prob
+  array(unlist(lapply(a, asplit, phenos)), c(n.pheno, n.pheno, nSamples))
 }

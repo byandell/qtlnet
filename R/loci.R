@@ -8,7 +8,7 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
     cross <- calc.genoprob(cross)
   }
 
-  pheno.net.str <- summary(qtlnet.object)$averaged.net
+  pheno.net.str <- get.averaged.net(qtlnet.object, ...)
 
   ## Extract needed attributes from qtlnet.object.
   pheno.nms <- attr(qtlnet.object, "pheno.names")
@@ -59,12 +59,13 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
       }
     }
     for(i in seq(n.pheno)) {
-      dif <- mpos[ss[[i]]$chr] - ss[[i]]$pos
+      ss.chr <- as.character(ss[[i]]$chr)
+      dif <- mpos[ss.chr] - ss[[i]]$pos
       is.close <- abs(dif) <= merge.qtl
       if(any(is.close)) {
         ss[[i]]$pos <- ss[[i]]$pos + is.close * dif
         if(!chr.pos)
-          row.names(ss[[i]])[is.close] <- name.pos[ss[[i]]$chr][is.close]
+          row.names(ss[[i]])[is.close] <- name.pos[ss.chr][is.close]
       }
     }
   }

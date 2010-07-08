@@ -235,7 +235,7 @@ qtlnet.phase4 <- function(dirpath, index = NULL, ...)
        compress = TRUE)
 }
 ####################################################################################
-qtlnet.phase5 <- function(dirpath, index = NULL, ...)
+qtlnet.phase5 <- function(dirpath, index = NULL, ..., verbose = FALSE)
 {
   ## PHASE 5: Combine results for post-processing.
   ##          Fast: Run on scheduler.
@@ -259,13 +259,16 @@ qtlnet.phase5 <- function(dirpath, index = NULL, ...)
   if(length(filenames) != nruns)
     parallel.error(10, 5, index)
   
-  outs.qtlnet <- list()
   for(i in seq(length(filenames))) {
+    if(verbose)
+      print(i)
     load(file.path(dirpath, filenames[i]))
-    outs.qtlnet[[i]] <- mcmc
+    mcmc <- legacy.qtlnet(mcmc, codes = (i == 1))
+    if(i == 1)
+      out.qtlnet <- mcmc
+    else
+      out.qtlnet <- c(out.qtlnet, mcmc)
   }
-  
-  out.qtlnet <- c.qtlnet(outs.qtlnet)
 
   save(out.qtlnet,
        file = file.path(dirpath, "Final.RData"),

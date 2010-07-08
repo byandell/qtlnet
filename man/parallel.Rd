@@ -6,7 +6,7 @@
 This routine calls one of four phases in a parallelized version of qtlnet.
 }
 \usage{
-parallel.qtlnet(phase, index = NULL, \dots, dirpath = ".")
+parallel.qtlnet(phase, index = 1, \dots, dirpath = ".")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -24,21 +24,29 @@ Phase of parallelization as number 1 through 4. See details.
 Character string for directory were user can read and write files. When
 submitting to a cluster, this should remain the default.
 }
-Phase 1 optional arguments:
-\item{cross.file}{Name of \code{RData} file to be loaded; contains cross
-  object with name \code{cross.name}.}
-\item{cross.name}{Name of cross object loaded from \code{cross.file}.}
 }
 \details{
 See \url{http://www.stat.wisc.edu/~yandell/sysgen/qtlnet} for details of
 implementation in progress. The plan is to run qtlnet via Condor
 (\url{http://www.condor.org}) to scale up to larger networks, say up to
-100 nodes. Phase 1 sets up the problem and determines how many
-\code{\link[qtl]{scanone}} calls (via \code{\link{bic.qtlnet}} will be
-needed. Phase 2 runs \code{\link[qtl]{scanone}} in a parallelized
-fashion. Phase 3 runs the MCMC sequence multiple times when done in
-parallel. Phase 4 is the wrapup. There is a Phase 0 to install R/qtl and
-R/qtlnet on cluster machines.
+100 nodes. Most important information is passed in files. Phase 1
+imports arguments from the \code{params.txt} file, which must have
+parse-able assignments to the arguments of
+\code{qtlnet:::qtlnet.phase1}. This first phase produces file
+\code{Phase1.RData}, which included objects used by all other phases.
+
+Phase 1 also creates file \code{groups.txt}, which for each line has
+begin and end indices for the \code{parents} that would result from a
+call to \code{\link{parents.qtlnet}}. Phase 2 should be run the same
+number of times as the number of lines in file \code{groups.txt}. Each
+run produces a \code{bicN.RData} file containing BIC computations. These
+computations are aggregated in Phase 3 to create \code{Phase3.RData},
+which contains the \code{saved.scores} used for
+\code{\link{mcmc.qtlnet}} runs in Phase 4, which each produce an
+\code{mcmcN.RData} file. The number of runs of Phase 4
+is an argument \code{nruns} stored in the \code{params.txt} file
+processed in Phase 1. Finally, Phase 5 aggregates the MCMC results from
+multiple independent runs into one \code{qtlnet} object.
 }
 \author{
 Brian S. Yandell and Elias Chaibub Neto

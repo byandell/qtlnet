@@ -1,4 +1,5 @@
-loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, ...)
+loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
+                        ...)
 {
   cross <- qtlnet.object$cross
   ## Make sure cross object has genotype probabilities.
@@ -7,7 +8,7 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, ...)
     cross <- calc.genoprob(cross)
   }
 
-  pheno.net.str <- summary(qtlnet.object)$averaged.net
+  pheno.net.str <- get.averaged.net(qtlnet.object)
 
   ## Extract needed attributes from qtlnet.object.
   pheno.nms <- attr(qtlnet.object, "pheno.names")
@@ -16,9 +17,9 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, ...)
   thr <- attr(qtlnet.object, "threshold")
   method <- attr(qtlnet.object, "method")
 
-  le <- length(pheno.nms)
-  QTLnodes <- list()
-  for(i in 1:le){
+  n.pheno <- length(pheno.nms)
+  ss <- list()
+  for(i in seq(n.pheno)){
     pa <- get.parents(pheno=pheno.nms[i], pheno.net.str=pheno.net.str)
 
     ## Reduce to nonmissing data.
@@ -38,13 +39,43 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, ...)
     addcov.dat <- cbind(pacov.dat, addcov.dat)
     intcov.dat <- create.cov.matrix(crossi, cov.names = intcov[[i]])
     
-    ss <- scanone.summary(crossi, i, addcov.dat, intcov.dat, thr[[i]], method)
+    ss[[i]] <- scanone.summary(crossi, i, addcov.dat, intcov.dat, thr[[i]], method)
+  }
+  if(merge.qtl > 0) {
+    ## If QTL within merge.qtl of mean pos for that chr, use mean pos.
+    chr <- unlist(sapply(ss, function(x) x$chr))
+    pos <- unlist(sapply(ss, function(x) x$pos))
+    mpos <- tapply(pos, chr, mean)
 
-    markers <- row.names(ss)
+    ## Need to re-get markers if !chr.pos.
+    if(!chr.pos) {
+      name.pos <- mpos
+      for(j in names(mpos[!is.na(mpos)])) {
+        map <- pull.loci(qtlnet.object$cross, j)
+        wh <- names(which.min(abs(map - mpos[j]))[1])
+        if(substring(wh, 1, 3) == "loc")
+          wh <- paste("c", j, ".", wh, sep = "")
+        name.pos[j] <- wh
+      }
+    }
+    for(i in seq(n.pheno)) {
+      dif <- mpos[ss[[i]]$chr] - ss[[i]]$pos
+      is.close <- abs(dif) <= merge.qtl
+      if(any(is.close)) {
+        ss[[i]]$pos <- ss[[i]]$pos + is.close * dif
+        if(!chr.pos)
+          row.names(ss[[i]])[is.close] <- name.pos[ss[[i]]$chr][is.close]
+      }
+    }
+  }
+    
+  QTLnodes <- list()
+  for(i in seq(n.pheno)){
+    markers <- row.names(ss[[i]])
     le.markers <- length(markers)
     if(le.markers > 0){ 
       if(chr.pos){
-        QTLnodes[[i]] <- paste("chr", ss[,1], "@", round(ss[,2], 2), sep = "")
+        QTLnodes[[i]] <- paste("chr", ss[[i]][,1], "@", round(ss[[i]][,2], 2), sep = "")
       }
       else{
         QTLnodes[[i]] <- markers
@@ -64,4 +95,15 @@ get.parents <- function(pheno, pheno.net.str)
   pa <- pheno.net.str[pheno.net.str[,2] == pheno, 1]
   if(length(pa) == 0) return(NULL)
   else return(pa)
+}
+######################################################################
+pull.loci <- function(cross, i)
+{
+  ## Taken directly from R/qtl scanone.
+  stp <- attr(cross$geno[[i]]$prob, "step")
+  oe <- attr(cross$geno[[i]]$prob, "off.end")
+  if ("stepwidth" %in% names(attributes(cross$geno[[i]]$prob))) 
+    stpw <- attr(cross$geno[[i]]$prob, "stepwidth")
+  else stpw <- "fixed"
+  map <- create.map(cross$geno[[i]]$map, stp, oe, stpw)
 }

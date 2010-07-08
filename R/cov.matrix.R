@@ -41,9 +41,9 @@ create.cov.matrix <- function(cross, cov.names)
   if(is.numeric(cov.names))
     cov.names <- names(cross$pheno)[cov.names]
   
-  if(!is.null(cov.names)){
+  if(length(cov.names)){
     myformula <- formula(paste("~", paste(cov.names, collapse = "+")))
-    as.matrix(model.matrix(myformula, cross$pheno)[,-1])
+    model.matrix(myformula, cross$pheno)[,-1, drop = FALSE]
   }
   else
     NULL

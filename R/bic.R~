@@ -32,8 +32,9 @@ bic.qtlnet <- function(cross, pheno.col, threshold,
     stop("threshold must have same length as pheno.col")
 
   n.scores <- sum(n.pheno - sapply(parents, length))
-  update.scores <- matrix(NA, n.scores, 3)
-  dimnames(update.scores)[[2]] <- c("code","pheno.col","bic")
+  update.scores <- list(code = rep("", n.scores),
+                        pheno.col = rep(NA, n.scores),
+                        bic = rep(NA, n.scores))
   k <- 0
 
   for(parent.code in names(parents)) {
@@ -51,7 +52,9 @@ bic.qtlnet <- function(cross, pheno.col, threshold,
                         addcov, intcov, threshold, n.pheno,
                         update.scores = update.scores, ...)
         n.run <- nrow(run)
-        update.scores[k + seq(n.run), ] <- run
+        update.scores$code[k + seq(n.run)] <- as.character(run$code) 
+        update.scores$pheno.col[k + seq(n.run), ] <- run$pheno.col
+        update.scores$bic[k + seq(n.run), ] <- run$bic
         k <- k + n.run
       }
     }
@@ -123,18 +126,21 @@ make.saved.scores <- function(pheno.names, max.parents = 3, saved.scores = NULL,
   out
 }
 ######################################################################
-parents.qtlnet <- function(pheno.col, max.parents, codes.only = FALSE)
+parents.qtlnet <- function(pheno.col, max.parents = 3, codes.only = FALSE)
 {
   n.pheno <- length(pheno.col)
   
   ## Create possible patterns. Must be a faster way to do this, but so what.
   if(codes.only)
-    parents <- "0"
-  else
+    parents <- ""
+  else {
     parents <- list("0" = numeric(0))
+    names(parents) <- ""
+  }
   for(i in seq(1, max.parents)) {
     combs <- combn(n.pheno, i)
-    name.combs <- as.character(apply(2 ^ (combs - 1), 2, sum))
+    name.combs <- as.character(apply(combs, 2,
+                                     function(x,y) find.code(y,x), n.pheno + 1))
     if(codes.only)
       parents <- c(parents, name.combs)
     else {
@@ -179,17 +185,44 @@ calc.bic <- function(cross, code, pheno.col, parents, addcov, intcov, threshold,
     bic <- scan.genome(subset(cross, ind = !run$na),
                        run$pheno.cols, parents,
                        addcov[[pheno.col]], intcov[[pheno.col]],
-                       threshold[run$pheno.cols], method)
+                       threshold[run$pheno.cols], method, ...)
   run$bic <- bic
-  cbind(code = as.numeric(run$code),
-        pheno.col = run$pheno.cols,
-        bic = bic)
+  data.frame(code = run$code,
+             pheno.col = run$pheno.cols,
+             bic = bic)
 }
 ###########################################################################################
 find.code <- function(pheno.cols, pheno.parents)
 {
   apply(outer(pheno.cols, pheno.parents, function(x,y) y - (x < y)),
-        1, function(x) sum(2 ^ (x - 1)))
+##        1, function(x) sum(2 ^ (x - 1)))
+        1, function(x) paste(x, collapse = ","))
+}
+###########################################################################################
+legacy.code <- function(code)
+{
+  ## convert 2^x to a,b,c.
+  ## Code adapted from Erich Neuwirth <erich.neuwirth@univie.ac.at>
+
+  if(length(grep(",", code)) | any(code == ""))
+    code
+  else {
+    applyfn <- function(number) {
+      numberInBaseRecur<-function(number, base = 2) {
+        lastDigit <- function(number, base) number %% base
+        if (number == 0) result <- c(0)
+        else result <- c(numberInBaseRecur(number %/% base,base),
+                         lastDigit(number,base))
+        result
+      }
+      result <- numberInBaseRecur(number)
+      if(length(result))
+        paste(seq(length(result))[rev(as.logical(result))], collapse = ",")
+      else
+        ""
+    }
+    apply(as.matrix(as.numeric(code)), 1, applyfn)
+  }
 }
 ###########################################################################################
 match.parents <- function(cross, code, i, parents, addcov, intcov,
@@ -204,11 +237,11 @@ match.parents <- function(cross, code, i, parents, addcov, intcov,
     na.covar <- {na.covar |
                  apply(cross$pheno[, parents, drop = FALSE], 1,
                        function(x) any(is.na(x)))}
-  if(!is.null(addcov[[i]]))
+  if(length(addcov[[i]]))
     na.covar <- {na.covar |
                  apply(cross$pheno[, addcov[[i]], drop = FALSE], 1,
                        function(x) any(is.na(x)))}
-  if(!is.null(intcov[[i]]))
+  if(length(intcov[[i]]))
     na.covar <- {na.covar |
                  apply(cross$pheno[, intcov[[i]], drop = FALSE], 1,
                        function(x) any(is.na(x)))}
@@ -245,9 +278,8 @@ match.parents <- function(cross, code, i, parents, addcov, intcov,
   else
     pheno.cols <- i
   
-  ## Need to get code for all phenos if more than one..
-  if(length(pheno.cols) > 1)
-    code <- find.code(pheno.cols, parents)
+  ## Need to get code for all phenos.
+  code <- find.code(pheno.cols, parents)
 
   list(code = code, pheno.cols = pheno.cols, na = na.pheno | na.covar)
 }
@@ -296,7 +328,7 @@ adjust.pheno <- function(cross, pheno.col, addcov, intcov)
 ######################################################################
 find.pheno.names <- function(cross, pheno.col)
 {
-  if(!is.null(pheno.col)) {
+  if(length(pheno.col)) {
     if(is.list(pheno.col)) {
       for(i in seq(length(pheno.col)))
         if(!is.character(pheno.col[[i]]))
