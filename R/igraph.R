@@ -25,8 +25,10 @@ igraph.qtlnet <- function(x,
   if(is.null(node.names))
     node.names <- unique(c(as.character(edges[[1]]), as.character(edges[[2]])))
 
-  if(is.null(loci.list) | !include.qtl)
+  if(is.null(loci.list) | !include.qtl) {
     node.color <- pheno.color
+    names(edges)[3] <- "width"
+  }
   else {
     loci.data.frame <- data.frame(qtl = unlist(loci.list))
     loci.data.frame$pheno <- rep(names(loci.list), sapply(loci.list, length))
