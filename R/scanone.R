@@ -137,9 +137,13 @@ hk.design.matrix <- function(qtlo, cross.type="f2")
   nr <- nrow(qtlo$prob[[1]])
   ng <- length(qtlo$prob)
   if(cross.type == "f2"){
-    tmp <- try(unlist(lapply(qtlo$prob, function(x) cbind(x[,1]-x[,3],x[,2]))))
-    if(inherits(tmp, "try-error"))
-      browser()
+    tmp <- unlist(lapply(qtlo$prob,
+                         function(x) {
+                           if(ncol(x) == 3)
+                             cbind(x[,1]-x[,3],x[,2])
+                           else ## Must be X chr.
+                             x[,1]-x[,2]
+                         }))
     hkm <- matrix(tmp,nr,2*ng)
   }
   if(cross.type == "bc"){

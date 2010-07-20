@@ -53,8 +53,8 @@ bic.qtlnet <- function(cross, pheno.col, threshold,
                         update.scores = update.scores, ...)
         n.run <- nrow(run)
         update.scores$code[k + seq(n.run)] <- as.character(run$code) 
-        update.scores$pheno.col[k + seq(n.run), ] <- run$pheno.col
-        update.scores$bic[k + seq(n.run), ] <- run$bic
+        update.scores$pheno.col[k + seq(n.run)] <- run$pheno.col
+        update.scores$bic[k + seq(n.run)] <- run$bic
         k <- k + n.run
       }
     }
@@ -361,15 +361,16 @@ size.qtlnet <- function(pheno.col, max.parents = 3)
 }
 ######################################################################
 group.qtlnet <- function(pheno.col, max.parents = 3,
-                         n.groups,
-                         group.size = 1000,
+                         n.groups = NULL,
+                         group.size = 25000, ## takes about 1 hr.
                          parents = parents.qtlnet(pheno.col, max.parents))
 {
   n.child <- summary(parents)$n.child
   n.runs <- sum(n.child)
-  if(!missing(n.groups))
-    if(n.groups > 0)
-      group.size <- round(n.runs / n.groups)
+  if(is.null(n.groups))
+    n.groups <- floor(n.run / 25000)
+  if(n.groups > 0)
+    group.size <- round(n.runs / n.groups)
 
   groups <- 1 + floor(cumsum(n.child) / group.size)
   cbind(begin = seq(groups)[!duplicated(groups)],

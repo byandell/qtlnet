@@ -68,6 +68,7 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
                           step = 1,
                           addcov = NULL, intcov = NULL,
                           nSamples = 1000, thinning = 20,
+                          n.groups = 100, group.size = 25000,
                           ...)
 {
   ## PHASE 1: Initiation. Needed in phases 2 and 3.
@@ -98,7 +99,8 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
   ## Break up into groups to run on several machines.
   ## 54 groups of ~1000, for a total of 53248 scanone runs.
   parents <- parents.qtlnet(pheno.col, max.parents)
-  groups <- group.qtlnet(parents = parents, group.size = 1000)
+  groups <- group.qtlnet(parents = parents, n.groups = n.groups,
+                         group.size = group.size)
   
   ## Save all relevant objects for later phases.
   save(cross, pheno.col, max.parents, threshold, parents, groups, nruns,
