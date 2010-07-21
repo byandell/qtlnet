@@ -68,7 +68,7 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
                           step = 1,
                           addcov = NULL, intcov = NULL,
                           nSamples = 1000, thinning = 20,
-                          n.groups = 100, group.size = 25000,
+                          n.groups = NULL, group.size = 50000,
                           ...)
 {
   ## PHASE 1: Initiation. Needed in phases 2 and 3.

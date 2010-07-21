@@ -79,9 +79,9 @@ bic.join <- function(cross, pheno.col, ..., max.parents = 3)
   dimnames(saved.scores) <- list(codes, pheno.names)
 
   for(i in seq(length(scores))) {
-    index <- match(scores[[i]][, "code"], codes) +
-      n.codes * (scores[[i]][, "pheno.col"] - 1)
-    saved.scores[index] <- scores[[i]][,"bic"]
+    index <- match(scores[[i]]$code, codes) +
+      n.codes * (scores[[i]]$pheno.col - 1)
+    saved.scores[index] <- scores[[i]]$bic
   }
   saved.scores
 }
@@ -362,13 +362,13 @@ size.qtlnet <- function(pheno.col, max.parents = 3)
 ######################################################################
 group.qtlnet <- function(pheno.col, max.parents = 3,
                          n.groups = NULL,
-                         group.size = 25000, ## takes about 1 hr.
+                         group.size = 50000, ## takes about 1 hr in 2010.
                          parents = parents.qtlnet(pheno.col, max.parents))
 {
   n.child <- summary(parents)$n.child
   n.runs <- sum(n.child)
   if(is.null(n.groups))
-    n.groups <- floor(n.run / 25000)
+    n.groups <- floor(n.runs / group.size)
   if(n.groups > 0)
     group.size <- round(n.runs / n.groups)
 
