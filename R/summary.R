@@ -65,7 +65,7 @@ summary.qtlnet <- function(object, parent.patterns = FALSE, ...)
   pheno.names <- attr(object, "pheno.names")
 
   out <- list(freq.accept = object$freq.accept,
-              averaged.net = get.averaged.net(object, mav, pheno.names, ...),
+              averaged.net = get.averaged.net(object, pheno.names, ...),
               posterior.table = averaged.posterior.table(mav, pheno.names))
 
   if(parent.patterns)

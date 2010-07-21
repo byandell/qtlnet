@@ -114,7 +114,7 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
               row.names = FALSE, col.names = FALSE, quote = FALSE)
 }
 ####################################################################################
-qtlnet.phase2 <- function(dirpath, index = NULL, ...)
+qtlnet.phase2 <- function(dirpath, index = NULL, ..., verbose = FALSE)
 {
   ## PHASE 2: Compute BIC scores. Parallelize.
   ##          Slow. Run on condor nodes.
@@ -148,6 +148,7 @@ qtlnet.phase2 <- function(dirpath, index = NULL, ...)
   bic <- bic.qtlnet(cross, pheno.col, threshold,
                     max.parents = max.parents,
                     parents = parents[seq(groups[index,1], groups[index,2])],
+                    verbose = verbose,
                     ...)
   
   save(bic,
@@ -237,7 +238,7 @@ qtlnet.phase4 <- function(dirpath, index = NULL, ...)
        compress = TRUE)
 }
 ####################################################################################
-qtlnet.phase5 <- function(dirpath, index = NULL, ..., verbose = FALSE)
+qtlnet.phase5 <- function(dirpath, index = NULL, missing.ok = FALSE, ..., verbose = FALSE)
 {
   ## PHASE 5: Combine results for post-processing.
   ##          Fast: Run on scheduler.
@@ -258,7 +259,7 @@ qtlnet.phase5 <- function(dirpath, index = NULL, ..., verbose = FALSE)
   filenames <- list.files(dirpath, "mcmc.*RData")
   if(!length(filenames))
     parallel.error(9, 5, index)
-  if(length(filenames) != nruns)
+  if(length(filenames) != nruns & !missing.ok)
     parallel.error(10, 5, index)
   
   for(i in seq(length(filenames))) {
