@@ -87,8 +87,11 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
   ## Get any parameters in file. These will overwrite passed arguments.
   eval(parse(file.path(dirpath, params.file)))
 
-  ## Cross object.
-  load(file.path(dirpath, cross.file))
+  ## Cross object. Load if not done already.
+  if(!exists(cross.name))
+    load(file.path(dirpath, cross.file))
+
+  ## Change name of cross object to "cross" for internal use.
   if(cross.name != "cross")
     cross <- get(cross.name)
 
