@@ -22,6 +22,12 @@ threshold.net <- function(qtlnet.object,
   ## 1. the highest post.prob may be modest (.33 to .67, say).
   ## 2. the mav may not be a DAG. Need to check.
   n <- nrow(mav)
+
+  ## Make sure at least one edge is detected.
+  max.mav <- max(mav)
+  if(min.prob > max.mav)
+    min.prob <- max.mav
+  
   new <- mav
   for(i in 1:(n-1)){
     for(j in (i+1):n){
@@ -45,6 +51,7 @@ threshold.net <- function(qtlnet.object,
       }
     }
   }
+  attr(new, "min.prob") <- min.prob
   new
 }
 ######################################################################
@@ -53,6 +60,7 @@ get.averaged.net <- function(qtlnet.object,
                              min.prob = 0.5, ...)
 {
   new <- threshold.net(qtlnet.object, min.prob = min.prob, ...)
+  min.prob <- attr(new, "min.prob")
   out <- M.2.lista(new, pheno.names)
   attr(out, "min.prob") <- min.prob
 

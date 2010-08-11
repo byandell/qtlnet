@@ -378,6 +378,7 @@ check.qtlnet <- function(object,
   forbid <- 1
   while(!is.null(forbid)) {
     M <- threshold.net(object, min.prob = min.prob, ...)
+    min.prob <- attr(M, "min.prob")
     M1 <- 1 * (M > 0)
 
     ## This may not be right yet.
