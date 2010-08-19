@@ -368,9 +368,9 @@ group.qtlnet <- function(pheno.col, max.parents = 3,
   n.child <- summary(parents)$n.child
   n.runs <- sum(n.child)
   if(is.null(n.groups))
-    n.groups <- floor(n.runs / group.size)
+    n.groups <- ceiling(n.runs / group.size)
   if(n.groups > 0)
-    group.size <- round(n.runs / n.groups)
+    group.size <- ceiling(n.runs / n.groups)
 
   groups <- 1 + floor(cumsum(n.child) / group.size)
   cbind(begin = seq(groups)[!duplicated(groups)],
