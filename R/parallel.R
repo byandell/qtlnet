@@ -69,6 +69,7 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
                           addcov = NULL, intcov = NULL,
                           nSamples = 1000, thinning = 20,
                           n.groups = NULL, group.size = 50000,
+                          M0 = NULL, init.edges = NULL,
                           ...)
 {
   ## PHASE 1: Initiation. Needed in phases 2 and 3.
@@ -107,7 +108,7 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
   
   ## Save all relevant objects for later phases.
   save(cross, pheno.col, max.parents, threshold, parents, groups, nruns,
-       addcov, intcov, nSamples, thinning,
+       addcov, intcov, nSamples, thinning, M0, init.edges,
        file = file.path(dirpath, "Phase1.RData"),
        compress = TRUE)
   
@@ -232,7 +233,8 @@ qtlnet.phase4 <- function(dirpath, index = NULL, ...)
   ## Run MCMC with randomized initial network.
   mcmc <- mcmc.qtlnet(cross, pheno.col, threshold = threshold,
                       max.parents = max.parents,
-                      saved.scores = saved.scores, init.edges = NULL,
+                      saved.scores = saved.scores,
+                      init.edges = init.edges, M0 = M0,
                       addcov = addcov, intcov = intcov,
                       nSamples = nSamples, thinning = thinning,
                       ...)

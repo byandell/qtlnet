@@ -13,6 +13,7 @@
 # directive.
 #
 
+export(best.qtlnet)
 export(c.qtlnet)
 export(bic.join)
 export(bic.qtlnet)
@@ -27,6 +28,7 @@ export(parallel.qtlnet)
 export(parents.qtlnet)
 export(Rgraphviz.qtlnet)
 export(size.qtlnet)
+export(subset.qtlnet)
 export(write.qtlnet)
 
 ## The following have S3 methods:

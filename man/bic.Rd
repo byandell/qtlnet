@@ -2,7 +2,6 @@
 \alias{bic.qtlnet}
 \alias{bic.join}
 \alias{Pscdbp.bic}
-\alias{c.qtlnet}
 \title{
 Pre-compute BIC values for qtlnet sampling.
 }

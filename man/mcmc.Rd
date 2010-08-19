@@ -9,7 +9,7 @@ directed acyclic graphs (DAGs).
 }
 \usage{
 mcmc.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
-  nSamples = 1000, thinning = 1, max.parents = 3, M0,
+  nSamples = 1000, thinning = 1, max.parents = 3, M0 = NULL,
   burnin = 0.1, method = "hk", random.seed = NULL, init.edges = 0,
   saved.scores = NULL, verbose = FALSE, \dots)
 init.qtlnet(pheno.col, max.parents, init.edges)
@@ -48,7 +48,7 @@ graphs and shortens run time. Probably best to consider values of 3-5.
   \item{M0}{
 Matrix of 0s and 1s with initial directed graph of row->col if (row,col)
 entry is 1. Cycles are forbidden (e.g. 1s on diagonal or symmetric 1s
-across diagonal). Default is sampled by a call to \code{init.qtlnet};
+across diagonal). Default (if \code{NULL}) is sampled by a call to \code{init.qtlnet};
 all 0s if \code{init.edges} = 0 (default).
 }
 \item{burnin}{

@@ -39,7 +39,7 @@ model2M <- function(post.model)
   ## Convert post.model into 3-D M array.
   
   ## Strip out parentheses and split by node.
-  a <- strsplit(substring(model, 2, nchar(model) - 1), ")(", fixed = TRUE)
+  a <- strsplit(substring(post.model, 2, nchar(post.model) - 1), ")(", fixed = TRUE)
   nSamples <- length(a)
   n.pheno <- length(a[[1]])
   phenos <- rep(0, n.pheno)
@@ -56,4 +56,32 @@ model2M <- function(post.model)
     a2
   }
   array(unlist(lapply(a, asplit, phenos)), c(n.pheno, n.pheno, nSamples))
+}
+##########################################################################
+subset.qtlnet <- function(x, run, ...)
+{
+  if(missing(run))
+    stop("run must be specified")
+
+  nSamples <- attr(x, "nSamples")
+  runs <- length(nSamples)
+  if(any(run < 0) | any(run > runs))
+    stop(paste("run must be integer between 1 and", runs))
+  
+  run.id <- rep(seq(runs), nSamples)
+
+  out <- x
+  wh <- which(run.id %in% run)
+  for(i in c("post.model","post.bic","all.bic"))
+    out[[i]] <- out[[i]][wh]
+  M <- model2M(out$post.model)
+  out$Msd <- NULL
+  attr(out, "M0") <- M[,,1]
+  attr(out, "nSamples") <- attr(out, "nSamples")[run]
+
+  ## These are approximate as only using saved MCMC samples.
+  out$Mav <- apply(M, 1:2, mean)
+  out$freq.accept <- mean(out$all.bic == out$post.bic)
+  
+  out
 }

@@ -3,7 +3,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         addcov=NULL, intcov=NULL,
                         nSamples = 1000, thinning=1,
                         max.parents = 3,
-                        M0 = init.qtlnet(pheno.col, max.parents, init.edges),
+                        M0 = NULL,
                         burnin = 0.1, method = "hk", random.seed = NULL,
                         init.edges = 0,
                         saved.scores = NULL,
@@ -35,6 +35,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   n.pheno <- length(pheno.col)
 
   ## Initial network matrix.
+  if(is.null(M0))
+    M0 <- init.qtlnet(pheno.col, max.parents, init.edges)
   if(nrow(M0) != n.pheno | ncol(M0) != n.pheno)
     paste("M0 must be square matrix the size of pheno.col")
 
@@ -102,7 +104,9 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     bic.new <- aux.new$model.score
     model.new <- aux.new$model.name
 
-
+    ## Accept new model?
+    ## Always if bic.new < bic.old.
+    ## Otherwise do Metropolis-Hastings trick.
     mr <- exp(-0.5*(bic.new - bic.old))*(ne.old/ne.new)
     if(runif(1) <= min(1,mr)){
       M.old <- M.new
