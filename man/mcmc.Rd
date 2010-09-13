@@ -11,7 +11,7 @@ directed acyclic graphs (DAGs).
 mcmc.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
   nSamples = 1000, thinning = 1, max.parents = 3, M0 = NULL,
   burnin = 0.1, method = "hk", random.seed = NULL, init.edges = 0,
-  saved.scores = NULL, verbose = FALSE, \dots)
+  saved.scores = NULL, rev.method = c("nbhd", "single"), verbose = FALSE, \dots)
 init.qtlnet(pheno.col, max.parents, init.edges)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -71,6 +71,9 @@ Model fitting method for \code{\link[qtl]{scanone}}.
   Updated scores, typically pre-computed by
   \code{\link{bic.qtlnet}}.
 }
+  \item{rev.method}{
+Method to use for reversing edges. See details.
+  }
   \item{verbose}{
 Print iteration and number of models fit.
   }
@@ -99,7 +102,13 @@ Additional arguments. Advanced users may want to supply pre-computed
   same phenotypes (and covariates). Caution is advised as only a modest
   amount of checking can be done.
 
-  The \code{init.qtlnet} routine can be used 
+  The \code{init.qtlnet} routine can be used to randomly find an initial
+  causal network \code{M0} with up to \code{init.edges} edges.
+
+  MCMC updates include delete, add or reverse edge direction. The early
+  version of this method only considered the edge on its own
+  (\code{rev.method = "single"}), while the neighborhood method
+  (\code{rev.method = "nbhd"}) uses the update
   }
 \value{
   List of class \code{qtlnet}
@@ -136,6 +145,11 @@ framework for joint inference of causal network and
 genetic architecture for correlated phenotypes.
 Ann Appl Statist 4: 320-339.
 \url{http://dx.doi.org/10.1214/09-AOAS288}
+
+Grzegorczyk and Husmeier (2008) Improving the structure MCMC sampler for
+Bayesian networks by introducing a new edge reversal move.
+Mach Learn 71: 265–305.
+\url{http://dx.doi.org/10.1007/s10994-008-5057-7}
 }
 \seealso{
   \code{\link[qtl]{read.cross}},  \code{\link[qtl]{scanone}},

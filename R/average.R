@@ -8,6 +8,11 @@ get.model.average <- function(qtlnet.object)
     pheno.names <- attr(qtlnet.object, "pheno.names")
     dimnames(mav) <- list(pheno.names, pheno.names)
   }
+  else {
+    nSamples <- attr(qtlnet.object, "nSamples")
+    if(length(nSamples) > 1)
+      mav <- apply(mav, c(1,2), weighted.mean, nSamples)
+  }
   mav
 }
 ##########################################################################
@@ -67,21 +72,23 @@ subset.qtlnet <- function(x, run, ...)
   runs <- length(nSamples)
   if(any(run < 0) | any(run > runs))
     stop(paste("run must be integer between 1 and", runs))
-  
-  run.id <- rep(seq(runs), nSamples)
 
   out <- x
+
+  ## Subset the nSample * runs values.
+  run.id <- rep(seq(runs), nSamples)
   wh <- which(run.id %in% run)
   for(i in c("post.model","post.bic","all.bic"))
     out[[i]] <- out[[i]][wh]
-  M <- model2M(out$post.model)
-  out$Msd <- NULL
-  attr(out, "M0") <- M[,,1]
-  attr(out, "nSamples") <- attr(out, "nSamples")[run]
 
-  ## These are approximate as only using saved MCMC samples.
-  out$Mav <- apply(M, 1:2, mean)
-  out$freq.accept <- mean(out$all.bic == out$post.bic)
+  ## Subset the runs values.
+  wh <- which(seq(runs) %in% run)
+  out$freq.accept <- out$freq.accept[wh]
+  out$Mav <- out$Mav[,,wh]
+  attr(out, "nSamples") <- attr(out, "nSamples")[wh]
+
+  M <- model2M(out$post.model[1])
+  attr(out, "M0") <- M[,,1]
   
   out
 }

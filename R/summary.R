@@ -72,7 +72,11 @@ summary.qtlnet <- function(object, parent.patterns = FALSE, ...)
   mav <- get.model.average(object)
   pheno.names <- attr(object, "pheno.names")
 
-  out <- list(freq.accept = object$freq.accept,
+  freq.accept <- object$freq.accept
+  if(length(freq.accept) > 1)
+    freq.accept <- weighted.mean(freq.accept, attr(object, "nSamples"))
+  
+  out <- list(freq.accept = freq.accept,
               averaged.net = get.averaged.net(object, pheno.names, ...),
               posterior.table = averaged.posterior.table(mav, pheno.names))
 

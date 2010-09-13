@@ -7,9 +7,13 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         burnin = 0.1, method = "hk", random.seed = NULL,
                         init.edges = 0,
                         saved.scores = NULL,
+                        rev.method = c("nbhd", "single"),
                         verbose = FALSE, ...)
 {
+  ## Verbose: 1 or TRUE: saved count; 2: MCMC moves; 3: plot BIC; 4: 2&3.
+  
   ## Check input parameters.
+  rev.method <- arg.match(rev.method)
 
   ## Random number generator seed.
   if(!is.null(random.seed)) {
@@ -59,6 +63,8 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   post.model <- rep(NA,nSamples)
   all.bic <- rep(NA,nSamples)
 
+  if(is.null(saved.scores))
+    rev.method <- "single"
   saved.scores <- make.saved.scores(pheno.names, max.parents,
                                     saved.scores = saved.scores,
                                     verbose = verbose, ...)
@@ -67,7 +73,6 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   ne.old <- nbhd.size(M.old, max.parents)[[1]]
   aux.new <- score.model(M.old, saved.scores, cross, addcov, intcov,
                          threshold, verbose, method = method, ...)
-  if(verbose) cat("\n")
   
   bic.old <- aux.new$model.score
   tmp <- aux.new$update.scores
@@ -79,16 +84,29 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   }
   model.old <- aux.new$model.name
 
+  if(verbose) {
+    cat("\n")
+    if(verbose > 2)
+      plot(c(1,nSamples), bic.old * c(0.5,1.2), type = "n",
+           xlab = "sample", ylab = "BIC")
+  }
+  
   k <- 0
   if(thinning <= 1) {
     post.bic[1] <- all.bic[1] <- bic.old
     post.model[1] <- model.old
     k <- 1
+    if(verbose > 2)
+      points(k, post.bic[k], cex = 0.5)
   }
   cont.accept <- 0
   for(i in 2:(nSamples*thinning)){
     M.new <- propose.new.structure(M.old, max.parents,
-                                   verbose = (verbose > 1))
+                                   saved.scores = saved.scores, rev.method = rev.method,
+                                   verbose = (verbose %in% c(2,4)))
+    rev.ratio <- M.new$rev.ratio
+    M.new <- M.new$M
+    
     ne.new <- nbhd.size(M.new, max.parents)[[1]]
     aux.new <- score.model(M.new, saved.scores, cross, addcov, intcov,
                            threshold, verbose, method = method, ...)
@@ -107,7 +125,12 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     ## Accept new model?
     ## Always if bic.new < bic.old.
     ## Otherwise do Metropolis-Hastings trick.
-    mr <- exp(-0.5*(bic.new - bic.old))*(ne.old/ne.new)
+    if(is.infinite(rev.ratio))
+      mr <- 1
+    else
+      mr <- exp(-0.5*(bic.new - bic.old)) * (ne.old / ne.new) * rev.ratio
+    if(is.na(mr) | is.null(mr))
+      browser()
     if(runif(1) <= min(1,mr)){
       M.old <- M.new
       bic.old <- bic.new
@@ -126,7 +149,11 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
       all.bic[k] <- bic.new
       post.bic[k] <- bic.old
       post.model[k] <- model.old
-      if(verbose) print(c(i,k)) 
+      if(verbose) {
+        print(c(i,k)) 
+        if(verbose > 2)
+          points(k, post.bic[k], cex = 0.5)
+      }
     }
   }
 
@@ -193,34 +220,34 @@ c.qtlnet <- function(...)
     if(!all(burnin == sapply(netlist, function(x) attr(x, "burnin"))))
       stop("burnin values differ")
 
-    out$Msd <- 0
-
+    if(is.matrix(out$Mav)) {
+      tmp <- out$Mav
+      nsheet <- 1
+      out$Mav <- array(0, c(nrow(tmp), ncol(tmp), length(netlist)))
+    }
+    else {
+      ## Already is array. Want to add another sheet.
+      tmp <- out$Mav
+      dtmp <- dim(tmp)
+      nsheet <- dtmp[3]
+      dtmp[3] <- nsheet + length(netlist) - 1
+      out$Mav <- array(0, dtmp)
+    }
+    out$Mav[, , seq(nsheet)] <- tmp
+    
     for(i in seq(2, length(netlist))) {
       ## Per step summaries.
-      for(j in c("post.model","post.bic","all.bic"))
+      for(j in c("post.model","post.bic","all.bic","freq.accept"))
         out[[j]] <- c(out[[j]], netlist[[i]][[j]])
 
       ## Attributes.
-      n1 <- sum(attr(out, "nSamples"))
-      n2 <- attr(netlist[[i]], "nSamples")
-      n <- n1 + n2
-      attr(out, "nSamples") <- c(attr(out, "nSamples"), n2)
-
-      ## Matrix of average network structure and SD among multiple runs.
-      ## Msd is computed for upper - lower triangle
-      fold <- function(x) {
-        low <- lower.tri(x)
-        t(x)[low] - x[low]
-      }
-      tmp <- n1 * fold(out$Mav) ^ 2
-      out$Mav <- (n1 * out$Mav + n2 * netlist[[i]]$Mav) / n
-      tmp <- tmp - n * fold(out$Mav) ^ 2
-      out$Msd <- (n1 * out$Msd + n2 * fold(netlist[[i]]$Mav) ^ 2 + tmp) / n
       
-      ## Acceptance frequency.
-      out$freq.accept <- (n1 * out$freq.accept + n2 * netlist[[i]]$freq.accept) / n
+      attr(out, "nSamples") <- c(attr(out, "nSamples"),
+                                 attr(netlist[[i]], "nSamples"))
+
+      ## Matrices of average network structures.
+      out$Mav[ , , nsheet - 1 + i] <- netlist[[i]]$Mav
     }
-    out$Msd <- sqrt(out$Msd)
   }
   out
 }
@@ -234,7 +261,7 @@ nbhd.size <- function(M, max.parents = 3)
   for(j in 1:le){
         add.forbid <- forbidden.additions(M, j, max.parents)
         n.additions <- n.additions + (le - 1 - length(c(add.forbid$upf, add.forbid$downf)))
-        rev.allow <- check.reversions(M, j, max.parents)$allowed
+        rev.allow <- check.reversions(M, j, max.parents)
         if(!is.null(rev.allow))
           n.reversions <- n.reversions + nrow( rev.allow )
   }
@@ -276,6 +303,7 @@ propose.add <- function(M, node, max.parents)
   
   if(length(aux3)) {
     ## Check if any of aux3 is at or above max.parents.
+
     wh <- which(apply(M[, aux3, drop = FALSE], 2, sum) >= max.parents)
     if(length(wh))
       aux3 <- aux3[-wh]
@@ -289,9 +317,13 @@ propose.add <- function(M, node, max.parents)
   aux3
 }  
 ######################################################################
-propose.new.structure <- function(M, max.parents = 3, verbose = FALSE)
+propose.new.structure <- function(M, max.parents = 3,
+                                  saved.scores, rev.method = "single",
+                                  verbose = FALSE)
 {
-  ## Acceptance rate is 20%. Could we improve here?
+  ## Acceptance rate is <20%. Could we improve here?
+  ## Yes. See Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
+  rev.ratio <- 1
 
   ## To speed up, use M as logical matrix. Still return 0/1 matrix for now.
   le.nodes <- ncol(M)
@@ -305,10 +337,17 @@ propose.new.structure <- function(M, max.parents = 3, verbose = FALSE)
     if(verbose)
       cat(node, move, "")
 
+    old.M <- M
     switch(move,
            add = {
              aux3 <- propose.add(M, node, max.parents)
              if(!(flag <- (aux3 == 0))) {
+               aux1 <- check.downstream(M, aux3)
+               if(any(aux1 == node)) {
+                 ## This should not happen!
+                 cat(move, "downfall:", node, aux1, "\n")
+                 browser()
+               }
                M[node,aux3] <- 1
                if(verbose)
                  cat(aux3, "\n")
@@ -316,30 +355,187 @@ propose.new.structure <- function(M, max.parents = 3, verbose = FALSE)
            },
            reverse = {
              ## Reverse direction of an edge.
-             aux1 <- check.reversions(M, node, max.parents)$allowed
-             if(!(flag <- is.null(aux1))) {
-               le.rev <- nrow(aux1)
-               aux3 <- sample(seq(le.rev), 1)
-               aux3 <- aux1[aux3, ]
-               M[aux3[1], aux3[2]] <- 0
-               M[aux3[2], aux3[1]] <- 1
-               if(verbose)
-                 cat(aux3[1], aux3[2], "\n")
+             if(flag <- (rev.method == "single")) {
+               aux1 <- check.reversions(M, node, max.parents)
+               if(!(flag <- is.null(aux1))) {
+                 le.rev <- nrow(aux1)
+                 aux3 <- sample(seq(le.rev), 1)
+                 aux3 <- aux1[aux3, ]
+                 M[aux3[1], aux3[2]] <- 0
+                 M[aux3[2], aux3[1]] <- 1
+               }
              }
+             else { ## Reverse method of Grzegorczyk and Husmeier.
+               aux1 <- c(which(M[,node] == 1), le.nodes + which(M[node,] == 1))
+               if(!(flag <- !length(aux1))) {
+                 if(length(aux1) > 1)
+                   aux1 <- sample(aux1, 1)
+                 if(aux1 > le.nodes)
+                   aux3 <- c(node, aux1 - le.nodes)
+                 else
+                   aux3 <- c(aux1, node)
+
+                 aux1 <- check.downstream(M, aux3[2])
+                 if(any(aux1 == aux3[1])) {
+                   ## This should not happen!
+                   cat(move, "downfall:", aux3[1], aux1, "\n")
+                   browser()
+                 }
+                 
+               }
+               if(!flag) {
+                 if(aux3[1] == aux3[2]) {
+                   ## This should not happen!
+                   cat(move, "identity:", aux3, "\n")
+                   browser()
+                 }
+                 aux2 <- rev.edge(M, max.parents, saved.scores, aux3, verbose)
+                 rev.ratio <- aux2$rev.ratio
+                 M <- aux2$M
+               }
+             }
+             if(!flag & verbose)
+                 cat(aux3[1], aux3[2], "\n")
            },
            delete = {
-             ## Delete an existing edge.
-             aux1 <- which(M[, node] == 1)
-             if(!(flag <- (length(aux1) == 0))) {
+             ## Delete an existing edge through node.
+             aux1 <- c(which(M[, node] == 1), le.nodes + which(M[node,] == 1))
+             if(!(flag <- !length(aux1))) {
                if(length(aux1) > 1)
                  aux1 <- sample(aux1, 1)
-               M[aux1, node] <- 0
+               if(aux1 > le.nodes)
+                 aux3 <- c(node, aux1 - le.nodes)
+               else
+                 aux3 <- c(aux1, node)
+               M[aux3[1], aux3[2]] <- 0
                if(verbose)
-                 cat(aux1, "\n")
+                 cat(aux3, "\n")
              }
            })
   }
-  M
+
+  ## Check if we somehow have a created a cycle earlier. This should not happen.
+  down <- check.downstream(M, aux3[2])[-1]
+  up <- check.upstream(M, aux3[2])[-1]
+  if(length(down) & length(up)) {
+    if(any(down %in% up)) {
+      cat(move, "downup:", aux3, "\n", sort(down), "\n", sort(up), "\n")
+      browser()
+    }
+  }
+  
+  list(M = M, rev.ratio = rev.ratio)
+}
+######################################################################
+rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
+{
+  ## Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
+  ## Call provides node.pair[1 -> 2].
+
+  rev.ratio <- 1
+
+  ## Step 1: Orphan both nodes after computing reverse proposal prob.
+
+  ## Parents of 2 include 1 but exclude all downstream of 2.
+  index <- index.parents(saved.scores, node.pair[1], node.pair[2])
+  down <- check.downstream(M, node.pair[2])[-1]
+  if(length(down))
+    index <- index[-index.parents(saved.scores[index,, drop = FALSE], down, node.pair[2])]
+  z.2 <- saved.scores[index, node.pair[2]]
+  z.2 <- exp(z.2 - max(z.2))
+  q.2 <- z.2[find.parent.score(M, saved.scores, index, node.pair[2])] / sum(z.2)
+
+  ## Parents of 1 exclude nodes at or downstream of 2.
+  down <- unique(c(check.downstream(M, node.pair[2]),
+                   check.downstream(M, node.pair[1])[-1]))
+  index <- index.parents(saved.scores, down, node.pair[1])
+  z.1 <- saved.scores[-index, node.pair[1]]
+  z.1 <- exp(z.1 - max(z.1))
+  q.1 <- z.1[find.parent.score(M, saved.scores, -index, node.pair[1])] / sum(z.1)
+
+  rev.ratio <- q.1 * q.2
+
+  if(verbose) {
+    cat("rev.ratio", rev.ratio, "\n")
+    if(is.na(rev.ratio))
+      browser()
+  }
+
+  ## Make node pair into orphans.
+  M[, node.pair] <- 0
+
+  ## Step 2. Sample new parents for node 1 with node 2 as one parent.
+  
+  ## Exclude parents downstream of 1 (except 2).
+  index <- index.parents(saved.scores, node.pair[2], node.pair[1])
+  down <- check.downstream(M, node.pair[1])[-1]
+  if(length(down))
+    index <- index[-index.parents(saved.scores[index,, drop = FALSE], down, node.pair[1])]
+  z.1 <- saved.scores[index, node.pair[1]]
+  z.1 <- exp(z.1 - max(z.1))
+  if(length(z.1) == 0) ## Should not happen
+    browser()
+  parent <- sample(seq(length(z.1)), 1, prob = z.1)
+  new.parent <- find.index.parent(M, saved.scores, index, node.pair[1], parent)
+  q.1 <- z.1[parent] / sum(z.1)
+
+  ## Add edges to graph for parents of node 1.
+  if(length(new.parent))
+    M[new.parent, node.pair[1]] <- 1
+
+  ## Step 3. Sample new parents for node 2 without node 1 as parent.
+
+  ## Make sure no parents are downstream of 1.
+  down <- unique(c(check.downstream(M, node.pair[1]),
+                   check.downstream(M, node.pair[2])[-1]))
+  index <- index.parents(saved.scores, down, node.pair[2])
+  z.2 <- saved.scores[-index, node.pair[2]]
+  z.2 <- exp(z.2 - max(z.2))
+  parent <- sample(seq(length(z.2)), 1, prob = z.2)
+  new.parent <- find.index.parent(M, saved.scores, -index, node.pair[2], parent)
+  q.2 <- z.2[parent] / sum(z.2)
+
+  ## Add edges to graph for parents of node 1.
+  if(length(new.parent))
+    M[new.parent, node.pair[2]] <- 1
+
+  rev.ratio <- q.1 * q.2 / rev.ratio
+
+  if(verbose) {
+    cat("rev.ratio", rev.ratio, "\n")
+    if(is.na(rev.ratio))
+      browser()
+  }
+  
+  list(M = M, rev.ratio = rev.ratio)
+}
+######################################################################
+find.index.parent <- function(M, saved.scores, index, node, new.parent)
+{
+  parents <- dimnames(saved.scores)[[1]][index][new.parent]
+  unlist(sapply(strsplit(parents, ",", fixed = TRUE),
+                function(x, node) {
+                  x <- as.numeric(x)
+                  x + (x >= node)
+                }, node))
+}
+######################################################################
+index.parents <- function(saved.scores, node1, node2)
+{
+  ## Row names of saved.scores renumber around missing node.
+  parents <- node1 - (node2 < node1)
+
+  ## Which parents include node.pair[2]?
+  which(sapply(strsplit(dimnames(saved.scores)[[1]], ",", fixed = TRUE),
+               function(x, parents) any(x %in% parents),
+               parents))
+}
+######################################################################
+find.parent.score <- function(M, saved.scores, index, node)
+{
+  parents <- qtlnet:::node.parents(M, node)$parents
+  parents <- parents - (parents > node)
+  match(paste(parents, collapse = ","), dimnames(saved.scores)[[1]][index])
 }
 ######################################################################
 forbidden.additions <- function(M, node, max.parents = 3)
@@ -362,7 +558,7 @@ forbidden.additions <- function(M, node, max.parents = 3)
     downf <- seq(nrow(M))[-node]
   else {
     if(le > 0)
-      downf <- check.downstream(M, downf)
+      downf <- check.upstream(M, downf)
     else
       downf <- NULL
   }
@@ -388,7 +584,7 @@ check.qtlnet <- function(object,
     ## This may not be right yet.
     forbid <- NULL
     for(i in seq(n.pheno)) {
-      downf <- check.downstream(M1, i)
+      downf <- check.upstream(M1, i)
       wh <- which(M1[i, downf] == 1)
       if(length(wh))
         forbid <- rbind(forbid, cbind(downf[wh],i, M[i, downf[wh]]))
@@ -407,29 +603,49 @@ check.qtlnet <- function(object,
   list(forbid = forbid, M = M)
 }
 ######################################################################
-check.downstream <- function(M, downf)
+check.upstream <- function(M, nodes)
 {
   ## After accounting for scanone, 85% of time is nbhd.size.
-  ## Of that, 85% (75% overall) is in check.downstream.
+  ## Of that, 85% (75% overall) is in check.upstream.
 
-  count.downok <- nrow(M) - 1 - length(downf)
+  count.upok <- nrow(M) - length(nodes)
   
-  ## Check downstream to see if a cycle would be created.
-  tmpfn <- function(x) sum(x)
-  is.down <- apply(M[, downf, drop = FALSE], 1, tmpfn)
+  ## check upstream to see if a cycle would be created.
+  is.up <- apply(M[, nodes, drop = FALSE], 1, sum)
+  flag <- TRUE
+  while(flag){
+    aux1 <- which(is.up > 0)
+    if(flag <- (length(aux1) > 0 & count.upok > 0)) {
+      aux1 <- aux1[!(aux1 %in% nodes)]
+      if(flag <- length(aux1)) {
+        is.up <- apply(M[, aux1, drop = FALSE], 1, sum)
+        nodes <- c(nodes, aux1)
+        count.upok <- count.upok - flag
+      }
+    }
+  }
+  nodes
+}
+######################################################################
+check.downstream <- function(M, nodes)
+{
+  count.downok <- nrow(M) - length(nodes)
+  
+  ## check downstream to see if a cycle would be created.
+  is.down <- apply(M[nodes,, drop = FALSE], 2, sum)
   flag <- TRUE
   while(flag){
     aux1 <- which(is.down > 0)
     if(flag <- (length(aux1) > 0 & count.downok > 0)) {
-      aux1 <- aux1[!(aux1 %in% downf)]
+      aux1 <- aux1[!(aux1 %in% nodes)]
       if(flag <- length(aux1)) {
-        is.down <- apply(M[, aux1, drop = FALSE], 1, tmpfn)
-        downf <- c(downf, aux1)
+        is.down <- apply(M[aux1,, drop = FALSE], 2, sum)
+        nodes <- c(nodes, aux1)
         count.downok <- count.downok - flag
       }
     }
   }
-  downf
+  nodes
 }
 ######################################################################
 check.reversions <- function(M, node, max.parents = 3)
@@ -437,16 +653,39 @@ check.reversions <- function(M, node, max.parents = 3)
   ## Check on possible reversals of directions.
   ## allowed if no cycles produced.
   ## forbidden if cycles result.
-  down <- which(M[,node] == 1)
-  le <- length(down)
 
-  allowed <- forbidden <- NULL
+  allowed <- NULL
   
-  if(le == 0)
-    forbidden <- cbind(seq(nrow(M))[-node], node)
-  else {
+  ## Check upstream.
+  up <- which(M[,node] == 1)
+  le <- length(up)
+  
+  if(le) {
     if(le == 1)
-      allowed <- cbind(down, node)
+      allowed <- cbind(up, node)
+    else { ## le > 1
+      ## Multiple colliders.
+      forbid.up <- rep(FALSE, le)
+      for(k in 1:le)
+        forbid.up[k] <- up[k] %in% check.upstream(M, up[-k])
+      if(any(forbid.up)){
+        if(any(!forbid.up))
+          allowed <- cbind(up[!forbid.up], node)
+      }
+      else
+        allowed <- cbind(up, node)
+    }
+  }
+    
+  ## Check downstream.
+  down <- which(M[node,] == 1)
+  le <- length(down)
+  
+  allowed2 <- NULL
+  
+  if(le) {
+    if(le == 1)
+      allowed2 <- cbind(node, down)
     else { ## le > 1
       ## Multiple colliders.
       forbid.down <- rep(FALSE, le)
@@ -454,27 +693,26 @@ check.reversions <- function(M, node, max.parents = 3)
         forbid.down[k] <- down[k] %in% check.downstream(M, down[-k])
       if(any(forbid.down)){
         if(any(!forbid.down))
-          allowed <- cbind(down[!forbid.down], node)
-        forbidden <- cbind(down[forbid.down], node)
+          allowed2 <- cbind(node, down[!forbid.down])
       }
       else
-        allowed <- cbind(down, node)
+        allowed2 <- cbind(down, node)
     }
+  }
+  allowed <- rbind(allowed, allowed2)
 
-    if(!is.null(allowed)) {
-      ## Final check of max.parents.
-      wh <- which(apply(M[, allowed[,1], drop = FALSE], 2, sum) >= max.parents)
-      if(length(wh)) {
-        ## Move pairs from allowed to forbidden.
-        forbidden <- rbind(forbidden, allowed[wh,])
-        allowed <- allowed[-wh,, drop = FALSE]
-        if(nrow(allowed) == 0)
-          allowed <- NULL
-      }
+  ## Final check of max.parents.
+  if(!is.null(allowed)) {
+    wh <- which(apply(M[, allowed[,1], drop = FALSE], 2, sum) >= max.parents)
+    if(length(wh)) {
+      ## Remove pairs.
+      allowed <- allowed[-wh,, drop = FALSE]
+      if(nrow(allowed) == 0)
+        allowed <- NULL
     }
   }
     
-  list(allowed = allowed, forbidden = forbidden)   
+  allowed
 }
 ##########################################################################
 legacy.qtlnet <- function(qtlnet.object, codes = TRUE)
