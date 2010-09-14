@@ -13,7 +13,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   ## Verbose: 1 or TRUE: saved count; 2: MCMC moves; 3: plot BIC; 4: 2&3.
   
   ## Check input parameters.
-  rev.method <- arg.match(rev.method)
+  rev.method <- match.arg(rev.method)
 
   ## Random number generator seed.
   if(!is.null(random.seed)) {
@@ -337,7 +337,6 @@ propose.new.structure <- function(M, max.parents = 3,
     if(verbose)
       cat(node, move, "")
 
-    old.M <- M
     switch(move,
            add = {
              aux3 <- propose.add(M, node, max.parents)
