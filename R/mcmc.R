@@ -441,7 +441,7 @@ rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
   if(length(down))
     index <- index[-index.parents(saved.scores[index,, drop = FALSE], down, node.pair[2])]
   z.2 <- saved.scores[index, node.pair[2]]
-  z.2 <- exp(z.2 - max(z.2))
+  z.2 <- exp(min(z.2) - z.2)
   q.2 <- z.2[find.parent.score(M, saved.scores, index, node.pair[2])] / sum(z.2)
 
   ## Parents of 1 exclude nodes at or downstream of 2.
@@ -449,7 +449,7 @@ rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
                    check.downstream(M, node.pair[1])[-1]))
   index <- index.parents(saved.scores, down, node.pair[1])
   z.1 <- saved.scores[-index, node.pair[1]]
-  z.1 <- exp(z.1 - max(z.1))
+  z.1 <- exp(min(z.1) - z.1)
   q.1 <- z.1[find.parent.score(M, saved.scores, -index, node.pair[1])] / sum(z.1)
 
   rev.ratio <- q.1 * q.2
@@ -471,7 +471,7 @@ rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
   if(length(down))
     index <- index[-index.parents(saved.scores[index,, drop = FALSE], down, node.pair[1])]
   z.1 <- saved.scores[index, node.pair[1]]
-  z.1 <- exp(z.1 - max(z.1))
+  z.1 <- exp(min(z.1) - z.1)
   if(length(z.1) == 0) ## Should not happen
     browser()
   parent <- sample(seq(length(z.1)), 1, prob = z.1)
@@ -489,7 +489,7 @@ rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
                    check.downstream(M, node.pair[2])[-1]))
   index <- index.parents(saved.scores, down, node.pair[2])
   z.2 <- saved.scores[-index, node.pair[2]]
-  z.2 <- exp(z.2 - max(z.2))
+  z.2 <- exp(min(z.2) - z.2)
   parent <- sample(seq(length(z.2)), 1, prob = z.2)
   new.parent <- find.index.parent(M, saved.scores, -index, node.pair[2], parent)
   q.2 <- z.2[parent] / sum(z.2)
