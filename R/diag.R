@@ -120,7 +120,7 @@ best.qtlnet <- function(x, burnin = attr(x, "burnin"),
 {
   subset(x, wh)
 }
-plotbic.qtlnet <- function(x, ...)
+plotbic.qtlnet <- function(x, ..., smooth = TRUE)
 {
   nSamples <- attr(x, "nSamples")
   runs <- length(nSamples)
@@ -132,7 +132,11 @@ plotbic.qtlnet <- function(x, ...)
   }
   plotfn <- function(post.bic, burnin) {
     tmp <- which(seq(post.bic) >= burnin * length(post.bic))
-    lines(tmp, post.bic[tmp])
+    lines(tmp, post.bic[tmp], col = "gray")
+  }
+  splotfn <- function(post.bic, burnin) {
+    tmp <- which(seq(post.bic) >= burnin * length(post.bic))
+    lines(tmp, lowess(post.bic[tmp])$y, col = "black")
   }
   
   if(runs == 1) {
@@ -150,6 +154,8 @@ plotbic.qtlnet <- function(x, ...)
          xlab = "Sample Index", ylab = "BIC")
     
     tapply(x$post.bic, run.id, plotfn, burnin)
+    if(smooth)
+      tapply(x$post.bic, run.id, splotfn, burnin)
   }
   title(paste("BIC samples for", runs, "MCMC", ifelse(runs == 1, "run", "runs")))
 }
