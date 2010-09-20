@@ -7,7 +7,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         burnin = 0.1, method = "hk", random.seed = NULL,
                         init.edges = 0,
                         saved.scores = NULL,
-                        rev.method = c("nbhd", "single"),
+                        rev.method = c("node.edge", "nbhd", "single"),
                         verbose = FALSE, ...)
 {
   ## Verbose: 1 or TRUE: saved count; 2: MCMC moves; 3: plot BIC; 4: 2&3.
@@ -101,9 +101,16 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   }
   cont.accept <- 0
   for(i in 2:(nSamples*thinning)){
-    M.new <- propose.new.structure(M.old, max.parents,
-                                   saved.scores = saved.scores, rev.method = rev.method,
-                                   verbose = (verbose %in% c(2,4)))
+    ## Propose new network structure.
+    M.new <- if(rev.method == "node.edge")
+      propose.new.node.edge(M.old, max.parents,
+                            saved.scores = saved.scores, rev.method = rev.method,
+                            verbose = (verbose %in% c(2,4)), ...)
+    else
+      propose.new.structure(M.old, max.parents,
+                            saved.scores = saved.scores, rev.method = rev.method,
+                            verbose = (verbose %in% c(2,4)), ...)
+
     rev.ratio <- M.new$rev.ratio
     M.new <- M.new$M
     
@@ -317,9 +324,112 @@ propose.add <- function(M, node, max.parents)
   aux3
 }  
 ######################################################################
+propose.new.node.edge <- function(M, max.parents = 3,
+                                  saved.scores, rev.method = "node.edge",
+                                  propose = c(node = 1, edge = 2, reverse = 10, drop = 2),
+                                  check.down = FALSE,
+                                  verbose = FALSE, ...)
+{
+  ## Ref: Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
+  ## Extension is to updating individual nodes and dropping edges.
+  rev.ratio <- 1
+
+  ## Proposal weights for types of changes.
+  if(any(propose <= 0))
+    stop("propose values must be positive")
+  name.propose <- names(propose)
+  propose <- array(propose, 4)
+  if(length(name.propose) == 4)
+    names(propose) <- name.propose
+  else
+    names(propose) <- c("node","edge","reverse","drop")
+  
+  ## To speed up, use M as logical matrix. Still return 0/1 matrix for now.
+  le.nodes <- ncol(M)
+  le.edges <- sum(M)
+
+  prob.node <- propose["node"] * le.nodes
+  prob.node <- prob.node / (prob.node + propose["edge"] * le.edges)
+  if(runif(1) <= prob.node) {
+    ## Propose new parents for a node.
+    node <- sample(seq(le.nodes), 1)
+    if(verbose)
+      cat("node ")
+    
+    aux2 <- update.node(M, max.parents, saved.scores, node, verbose)
+    rev.ratio <- aux2$rev.ratio
+    M <- aux2$M
+    if(verbose) {
+      up <- node.parents(M, node)$parents
+      cat(node, "up:", up, "\n")
+    }
+  }
+  else {
+    ## Propose change to edge.
+
+    ## Pick a valid edge.
+    edge <- which(M == 1)
+    if(length(edge) > 1)
+      edge <- sample(edge, 1)
+    edge <- c(row(M)[edge], col(M)[edge])
+    if(verbose)
+      cat("edge ")
+      
+    ## Cyclic mistake checks.
+    ## These should not happen!
+    if(edge[1] == edge[2]) {
+      cat("edge identity:", edge, "\n")
+      browser()
+    }
+    aux1 <- check.downstream(M, edge[2])
+    if(any(aux1 == edge[1])) {
+      cat("edge downfall:", edge, aux1, "\n")
+      browser()
+    }
+    
+    prob.reverse <- propose["reverse"]
+    prob.reverse <- prob.reverse / (prob.reverse + propose["drop"])
+    if(runif(1) <= prob.reverse) {
+      ## Propose to reverse an edge.
+      if(verbose)  cat("reverse ")
+      aux2 <- rev.edge(M, max.parents, saved.scores, edge, verbose)
+    }
+    else {
+      ## Propose to drop an edge.
+      if(verbose)  cat("drop ")
+      aux2 <- drop.edge(M, max.parents, saved.scores, edge, verbose)
+    }
+    rev.ratio <- aux2$rev.ratio
+    M <- aux2$M
+    
+    if(verbose) {
+      for(i in 1:2) {
+        up <- node.parents(M, edge[i])$parents
+        cat(edge[i], "up:", up, "\n")
+      }
+    }
+
+    if(check.down) {
+      ## NOTE: This takes time and should be dropped eventually.
+      ## Check if we somehow have a created a cycle earlier. This should not happen.
+      down <- check.downstream(M, edge[2])[-1]
+      up <- check.upstream(M, edge[2])[-1]
+      if(length(down) & length(up)) {
+        if(any(down %in% up)) {
+          cat("downup:", edge, "\n", sort(down), "\n", sort(up), "\n")
+          browser()
+        }
+      }
+    }
+  }
+
+  
+  list(M = M, rev.ratio = rev.ratio)
+}
+######################################################################
 propose.new.structure <- function(M, max.parents = 3,
-                                  saved.scores, rev.method = "single",
-                                  verbose = FALSE)
+                                  saved.scores, rev.method = "nbhd",
+                                  verbose = FALSE, ...)
 {
   ## Acceptance rate is <20%. Could we improve here?
   ## Yes. See Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
@@ -426,15 +536,110 @@ propose.new.structure <- function(M, max.parents = 3,
   list(M = M, rev.ratio = rev.ratio)
 }
 ######################################################################
-rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
+update.node <- function(M, max.parents, saved.scores, node, verbose = FALSE)
+{
+  ## Scores for possible parent sets.
+  down <- check.downstream(M, node)[-1]
+  index <- index.parents(saved.scores, down, node)
+  if(length(index))
+    z.1 <- saved.scores[-index, node]
+  else 
+    z.1 <- saved.scores[, node]
+  z.1 <- exp(min(z.1) - z.1)
+  s.1 <- sum(z.1)
+  if(length(z.1) == 0) ## Should not happen
+    browser()
+    
+  ## Find probability for current parents of node.
+  rev.ratio <- z.1[find.parent.score(M, saved.scores, -index, node)]
+    
+  ## Make node an orphan.
+  M[,node] <- 0
+
+  ## Sample new parents of node.
+  parent <- sample(seq(length(z.1)), 1, prob = z.1)
+
+  ## Proposal ratio.
+  rev.ratio <- z.1[parent] / rev.ratio
+
+  ## Add edges to graph for new parents of node.
+  new.parent <- find.index.parent(M, saved.scores, -index, node, parent)
+  if(length(new.parent))
+    M[new.parent, node] <- 1
+
+  if(verbose) {
+    cat("node rev.ratio", rev.ratio, "\n")
+    if(is.na(rev.ratio))
+      browser()
+  }
+  
+  list(M = M, rev.ratio = rev.ratio)
+
+}
+######################################################################
+drop.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
 {
   ## Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
   ## Call provides node.pair[1 -> 2].
 
-  rev.ratio <- 1
-
   ## Step 1: Orphan both nodes after computing reverse proposal prob.
+  rev.ratio <- reverse.proposal(M, saved.scores, node.pair, verbose)
+  M[, node.pair] <- 0
 
+  ## Step 2. Sample new parents for node 1 without node 2 as one parent.
+  
+  ## Exclude parents downstream of 1 or 2.
+  tmp <- sample.exclude.down(M, saved.scores, node.pair, verbose)
+  q.1 <- tmp$prob
+  parent <- tmp$parent
+  
+  ## Add edges to graph for parents of node 1.
+  if(length(parent))
+    M[parent, node.pair[1]] <- 1
+
+  ## Step 3. Sample new parents for node 2 without node 1 as parent.
+
+  ## Exclude parents downstream of 1 or 2.
+  tmp <- sample.exclude.down(M, saved.scores, rev(node.pair), verbose)
+  q.2 <- tmp$prob
+  parent <- tmp$parent
+
+  ## Proposal ratio.
+  rev.ratio <- q.1 * q.2 / rev.ratio
+
+  ## Add edges to graph for parents of node 2.
+  if(length(parent))
+    M[parent, node.pair[2]] <- 1
+
+  if(verbose) {
+    cat("edge rev.ratio", rev.ratio, "\n")
+    if(is.na(rev.ratio))
+      browser()
+  }
+  
+  list(M = M, rev.ratio = rev.ratio)
+}
+######################################################################
+sample.exclude.down <- function(M, saved.scores, node.pair, verbose = FALSE)
+{
+  ## Exclude parents downstream of 1 or 2.
+  down <- unique(c(check.downstream(M, node.pair[2]),
+                   check.downstream(M, node.pair[1])[-1]))
+  index <- index.parents(saved.scores, down, node.pair[1])
+  z.1 <- saved.scores[-index, node.pair[1]]
+  z.1 <- exp(min(z.1) - z.1)
+  if(length(z.1) == 0) ## Should not happen
+    browser()
+  parent <- sample(seq(length(z.1)), 1, prob = z.1)
+  q.1 <- z.1[parent] / sum(z.1)
+
+  new.parent <- find.index.parent(M, saved.scores, -index, node.pair[1], parent)
+
+  list(parent = new.parent, prob = q.1)
+}
+######################################################################
+reverse.proposal <- function(M, saved.scores, node.pair, verbose = FALSE)
+{
   ## Parents of 2 include 1 but exclude all downstream of 2.
   index <- index.parents(saved.scores, node.pair[1], node.pair[2])
   down <- check.downstream(M, node.pair[2])[-1]
@@ -459,8 +664,16 @@ rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
     if(is.na(rev.ratio))
       browser()
   }
+  rev.ratio
+}
+######################################################################
+rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
+{
+  ## Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
+  ## Call provides node.pair[1 -> 2].
 
-  ## Make node pair into orphans.
+  ## Step 1: Orphan both nodes after computing reverse proposal prob.
+  rev.ratio <- reverse.proposal(M, saved.scores, node.pair, verbose)
   M[, node.pair] <- 0
 
   ## Step 2. Sample new parents for node 1 with node 2 as one parent.
@@ -475,8 +688,8 @@ rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
   if(length(z.1) == 0) ## Should not happen
     browser()
   parent <- sample(seq(length(z.1)), 1, prob = z.1)
-  new.parent <- find.index.parent(M, saved.scores, index, node.pair[1], parent)
   q.1 <- z.1[parent] / sum(z.1)
+  new.parent <- find.index.parent(M, saved.scores, index, node.pair[1], parent)
 
   ## Add edges to graph for parents of node 1.
   if(length(new.parent))
@@ -484,24 +697,21 @@ rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
 
   ## Step 3. Sample new parents for node 2 without node 1 as parent.
 
-  ## Make sure no parents are downstream of 1.
-  down <- unique(c(check.downstream(M, node.pair[1]),
-                   check.downstream(M, node.pair[2])[-1]))
-  index <- index.parents(saved.scores, down, node.pair[2])
-  z.2 <- saved.scores[-index, node.pair[2]]
-  z.2 <- exp(min(z.2) - z.2)
-  parent <- sample(seq(length(z.2)), 1, prob = z.2)
-  new.parent <- find.index.parent(M, saved.scores, -index, node.pair[2], parent)
-  q.2 <- z.2[parent] / sum(z.2)
+  ## Exclude parents downstream of 1 or 2.
+  ## Somehow this is leading to cycles!
+  ## SOmehow the rev(node.pair) is not working.
+  tmp <- sample.exclude.down(M, saved.scores, rev(node.pair))
+  q.2 <- tmp$prob
+  new.parent <- tmp$parent
 
-  ## Add edges to graph for parents of node 1.
+  ## Add edges to graph for parents of node 2.
   if(length(new.parent))
     M[new.parent, node.pair[2]] <- 1
 
   rev.ratio <- q.1 * q.2 / rev.ratio
 
   if(verbose) {
-    cat("rev.ratio", rev.ratio, "\n")
+    cat("edge rev.ratio", rev.ratio, "\n")
     if(is.na(rev.ratio))
       browser()
   }
@@ -511,7 +721,10 @@ rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
 ######################################################################
 find.index.parent <- function(M, saved.scores, index, node, new.parent)
 {
-  parents <- dimnames(saved.scores)[[1]][index][new.parent]
+  if(length(index))
+    parents <- dimnames(saved.scores)[[1]][index][new.parent]
+  else
+    parents <- dimnames(saved.scores)[[1]][new.parent]
   unlist(sapply(strsplit(parents, ",", fixed = TRUE),
                 function(x, node) {
                   x <- as.numeric(x)
@@ -532,9 +745,16 @@ index.parents <- function(saved.scores, node1, node2)
 ######################################################################
 find.parent.score <- function(M, saved.scores, index, node)
 {
-  parents <- qtlnet:::node.parents(M, node)$parents
-  parents <- parents - (parents > node)
-  match(paste(parents, collapse = ","), dimnames(saved.scores)[[1]][index])
+  parents <- node.parents(M, node)$parents
+  if(!is.null(parents)) {
+    parents <- parents - (parents > node)
+    if(length(index))
+      match(paste(parents, collapse = ","), dimnames(saved.scores)[[1]][index])
+    else
+      match(paste(parents, collapse = ","), dimnames(saved.scores)[[1]])
+  }
+  else
+    1
 }
 ######################################################################
 forbidden.additions <- function(M, node, max.parents = 3)

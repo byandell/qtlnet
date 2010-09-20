@@ -1,6 +1,8 @@
 loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
                         ...)
 {
+  ## Get QTL loci for average network.
+  
   cross <- qtlnet.object$cross
   ## Make sure cross object has genotype probabilities.
   if (!("prob" %in% names(cross$geno[[1]]))) {
@@ -20,26 +22,9 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
   n.pheno <- length(pheno.nms)
   ss <- list()
   for(i in seq(n.pheno)){
-    pa <- get.parents(pheno=pheno.nms[i], pheno.net.str=pheno.net.str)
-
-    ## Reduce to nonmissing data.
-    tmp <- unique(c(i, pa, addcov[[i]], intcov[[i]]))
-    pheno.na <- apply(cross$pheno[, tmp, drop = FALSE], 1,
-                      function(x) any(is.na(x)))
-    crossi <- subset(cross, ind = !pheno.na)
-
-    ## Determine parent covariates.
-    pacov.dat <- NULL
-    if(!is.null(pa))
-      pacov.dat <- as.matrix(crossi$pheno[, pa, drop = FALSE])
-
-    ## Determine additive and interactive covariates.
-    addcov.dat <-
-      create.cov.matrix(crossi, cov.names = unique(c(addcov[[i]], intcov[[i]])))
-    addcov.dat <- cbind(pacov.dat, addcov.dat)
-    intcov.dat <- create.cov.matrix(crossi, cov.names = intcov[[i]])
-    
-    ss[[i]] <- scanone.summary(crossi, i, addcov.dat, intcov.dat, thr[[i]], method)
+    parents <- get.parents(pheno=pheno.nms[i], pheno.net.str=pheno.net.str)
+    ss[[i]] <- get.ss(cross, i, parents, addcov[[i]], intcov[[i]], thr[[i]],
+                      method)$ss
   }
   if(merge.qtl > 0) {
     ## If QTL within merge.qtl of mean pos for that chr, use mean pos.
@@ -88,6 +73,92 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
   }
   names(QTLnodes) <- pheno.nms
   QTLnodes
+}
+######################################################################
+get.ss <- function(cross, phenoi, parents, addcov, intcov, thr, method)
+{
+  ## Get SS for model. Includes chr and pos.
+
+  ## Reduce to nonmissing data.
+  cov.names <- unique(c(addcov, intcov))
+  tmp <- unique(c(phenoi, parents, cov.names))
+  pheno.na <- apply(cross$pheno[, tmp, drop = FALSE], 1,
+                    function(x) any(is.na(x)))
+  crossi <- subset(cross, ind = !pheno.na)
+
+  ## Determine parent covariates.
+  pacov.dat <- NULL
+  if(!is.null(parents))
+    pacov.dat <- as.matrix(crossi$pheno[, parents, drop = FALSE])
+
+  ## Determine additive and interactive covariates.
+  addcov.dat <- create.cov.matrix(crossi, cov.names = cov.names)
+  addcov.dat <- cbind(pacov.dat, addcov.dat)
+  intcov.dat <- create.cov.matrix(crossi, cov.names = intcov)
+  dimnames(addcov.dat)[[2]] <- make.names(dimnames(addcov.dat)[[2]])
+  dimnames(intcov.dat)[[2]] <- make.names(dimnames(intcov.dat)[[2]])
+    
+  ss <- scanone.summary(crossi, phenoi, addcov.dat, intcov.dat, thr, method)
+  list(ss = ss, cross = crossi, covar = addcov.dat, intcovar = intcov.dat)
+}
+######################################################################
+est.qtlnet <- function(qtlnet.object, ..., verbose = TRUE)
+{
+  ## Get fit for average network.
+  
+  cross <- qtlnet.object$cross
+  ## Make sure cross object has genotype probabilities.
+  if (!("prob" %in% names(cross$geno[[1]]))) {
+      warning("First running calc.genoprob.")
+    cross <- calc.genoprob(cross)
+  }
+
+  pheno.net.str <- get.averaged.net(qtlnet.object, ...)
+
+  ## Extract needed attributes from qtlnet.object.
+  pheno.nms <- attr(qtlnet.object, "pheno.names")
+  addcov <- attr(qtlnet.object, "addcov") 
+  intcov <- attr(qtlnet.object, "intcov") 
+  thr <- attr(qtlnet.object, "threshold")
+  method <- attr(qtlnet.object, "method")
+
+  n.pheno <- length(pheno.nms)
+  est <- list()
+  for(i in seq(n.pheno)){
+    if(verbose)
+      cat(pheno.nms[i], "\n")
+    
+    parents <- get.parents(pheno=pheno.nms[i], pheno.net.str=pheno.net.str)
+    ss <- get.ss(cross, i, parents, addcov[[i]], intcov[[i]], thr[[i]],
+                 method)
+    crossi <- ss$cross
+    covar <- ss$covar
+    intcov.names <- dimnames(ss$intcovar)[[2]]
+    cov.names <- dimnames(covar)[[2]]
+    ss <- ss$ss
+    
+    if(nrow(ss)) {
+      ## Determine additive and interactive covariates.
+      qtl <- makeqtl(crossi, ss$chr, ss$pos, what = "prob")
+      qs <- paste("Q", seq(length(ss$chr)), sep = "", collapse = "+")
+      if(length(intcov.names))
+        qs <- paste("(", paste(intcov.names, collapse = "+"), ")*",
+                    "(", qs, ")", sep = "")
+      
+      form <- formula(paste("y ~", qs,  "+",
+                            paste(cov.names, collapse = "+")))
+      est[[i]] <- fitqtl(crossi, i, qtl, covar, form, "hk",
+                         get.ests = TRUE)$ests$ests
+    }
+    else { ## No QTL!
+      form <- formula(paste("y ~", paste(cov.names, collapse = "+")))
+      data <- as.data.frame(covar)
+      data$y <- crossi$pheno[[i]]
+      est[[i]] <- coef(lm(form, data))
+    }
+  }
+  names(est) <- pheno.nms
+  est
 }
 ######################################################################
 get.parents <- function(pheno, pheno.net.str)
