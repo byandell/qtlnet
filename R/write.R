@@ -5,7 +5,10 @@ write.qtlnet <- function(x,
                          edges = get.averaged.net(x, ...),
                          loci.list = loci.qtlnet(x, ...),
                          include.qtl=TRUE,
+                         est.list = est.qtlnet(x, ...),
+                         include.est=TRUE,
                          digits = 3,
+                         col.names = TRUE,
                          ...)
 {
   
@@ -23,10 +26,25 @@ write.qtlnet <- function(x,
     out <- rbind(out, loci)
     out.width <- c(out.width, loci.width)
   }
-  
+    
   out <- as.data.frame(out)
   out$width <- round(out.width, digits)
+
+  if(include.est) {
+    ## Need to figure out how to add estimates of edge coef.
+    tmp <- rep(NA, nrow(out))
+    for(effect in levels(out$effect)) {
+      ii <- out$effect == effect
+      if(any(ii)) {
+        m <- match(as.character(out$cause)[ii], names(est.list[[effect]]),
+                   nomatch = 0)
+        tmp[ii][m > 0] <- est.list[[effect]][m]
+      }
+    }
+    out$coef <- tmp
+  }
   
-  write.table(out, file = filename, quote = FALSE, col.names = FALSE, row.names = FALSE)
+  write.table(out, file = filename, quote = FALSE,
+              col.names = col.names, row.names = FALSE)
   invisible(out)
 }

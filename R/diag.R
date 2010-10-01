@@ -130,20 +130,21 @@ plotbic.qtlnet <- function(x, ..., smooth = TRUE)
     tmp <- which(seq(x) >= burnin * length(x))
     range(x[tmp])
   }
-  plotfn <- function(post.bic, burnin) {
+  plotfn <- function(post.bic, burnin, col = "gray") {
     tmp <- which(seq(post.bic) >= burnin * length(post.bic))
-    lines(tmp, post.bic[tmp], col = "gray")
+    lines(tmp, post.bic[tmp], col = col)
   }
   splotfn <- function(post.bic, burnin) {
     tmp <- which(seq(post.bic) >= burnin * length(post.bic))
     lines(tmp, lowess(post.bic[tmp])$y, col = "black")
   }
-  
+
+  bicol <- ifelse(smooth, "gray", "black")
   if(runs == 1) {
     range.bic <- rngfn(x$post.bic, burnin)
     plot(c(1,max(nSamples)),range.bic, type = "n",
          xlab = "Sample Index", ylab = "BIC")
-    plotfn(x$post.bic, burnin)
+    plotfn(x$post.bic, burnin, bicol)
   }
   else {
     run.id <- rep(seq(runs), nSamples)
@@ -153,7 +154,7 @@ plotbic.qtlnet <- function(x, ..., smooth = TRUE)
     plot(c(1,max(nSamples)),range.bic, type = "n",
          xlab = "Sample Index", ylab = "BIC")
     
-    tapply(x$post.bic, run.id, plotfn, burnin)
+    tapply(x$post.bic, run.id, plotfn, burnin, bicol)
     if(smooth)
       tapply(x$post.bic, run.id, splotfn, burnin)
   }

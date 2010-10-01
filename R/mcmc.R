@@ -7,7 +7,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
                         burnin = 0.1, method = "hk", random.seed = NULL,
                         init.edges = 0,
                         saved.scores = NULL,
-                        rev.method = c("node.edge", "nbhd", "single"),
+                        rev.method = c("nbhd", "node.edge", "single"),
                         verbose = FALSE, ...)
 {
   ## Verbose: 1 or TRUE: saved count; 2: MCMC moves; 3: plot BIC; 4: 2&3.
@@ -99,7 +99,15 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     if(verbose > 2)
       points(k, post.bic[k], cex = 0.5)
   }
-  cont.accept <- 0
+  cont.accept <- numeric(0)
+  accept.fn <- function(x, move, fate = "accept") {
+    move <- paste(fate, move, sep = ".")
+    if(is.na(match(move, names(x))))
+      x[move] <- 1
+    else
+      x[move] <- x[move] + 1
+    x
+  }
   for(i in 2:(nSamples*thinning)){
     ## Propose new network structure.
     M.new <- if(rev.method == "node.edge")
@@ -112,6 +120,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
                             verbose = (verbose %in% c(2,4)), ...)
 
     rev.ratio <- M.new$rev.ratio
+    move <- M.new$move ## Want to keep track of moves and acceptance rates.
     M.new <- M.new$M
     
     ne.new <- nbhd.size(M.new, max.parents)[[1]]
@@ -143,8 +152,10 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
       bic.old <- bic.new
       ne.old <- ne.new
       model.old <- model.new
-      cont.accept <- cont.accept + 1
+      cont.accept <- accept.fn(cont.accept, move)
     }
+    else
+      cont.accept <- accept.fn(cont.accept, move, "reject")
 
     ## Accumulate M's for average.
     if(i > n.burnin)
@@ -166,11 +177,14 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
 
   ## Make average here.
   Mav <- Mav / (nSamples * thinning - n.burnin)
+
+  cont.accept <- cont.accept[sort(names(cont.accept))]
   
   out <- list(post.model = post.model,
               post.bic = post.bic, 
               Mav = Mav,
-              freq.accept = cont.accept / (nSamples * thinning), 
+              freq.accept = sum(cont.accept) / (nSamples * thinning),
+              cont.accept = cont.accept,
               saved.scores=saved.scores,
               all.bic=all.bic,
               cross = cross)
@@ -242,11 +256,15 @@ c.qtlnet <- function(...)
     }
     out$Mav[, , seq(nsheet)] <- tmp
     
+    out$cont.accept <- list(out$cont.accept)
+
     for(i in seq(2, length(netlist))) {
       ## Per step summaries.
       for(j in c("post.model","post.bic","all.bic","freq.accept"))
         out[[j]] <- c(out[[j]], netlist[[i]][[j]])
 
+      out$cont.accept[[i]] <- netlist[[i]]$cont.accept
+      
       ## Attributes.
       
       attr(out, "nSamples") <- c(attr(out, "nSamples"),
@@ -351,10 +369,11 @@ propose.new.node.edge <- function(M, max.parents = 3,
   prob.node <- propose["node"] * le.nodes
   prob.node <- prob.node / (prob.node + propose["edge"] * le.edges)
   if(runif(1) <= prob.node) {
+    move <- "node"
     ## Propose new parents for a node.
     node <- sample(seq(le.nodes), 1)
     if(verbose)
-      cat("node ")
+      cat(move, "")
     
     aux2 <- update.node(M, max.parents, saved.scores, node, verbose)
     rev.ratio <- aux2$rev.ratio
@@ -366,6 +385,9 @@ propose.new.node.edge <- function(M, max.parents = 3,
   }
   else {
     ## Propose change to edge.
+    move <- "edge"
+    if(verbose)
+      cat(move, "")
 
     ## Pick a valid edge.
     edge <- which(M == 1)
@@ -424,7 +446,7 @@ propose.new.node.edge <- function(M, max.parents = 3,
   }
 
   
-  list(M = M, rev.ratio = rev.ratio)
+  list(M = M, rev.ratio = rev.ratio, move = move)
 }
 ######################################################################
 propose.new.structure <- function(M, max.parents = 3,
@@ -533,7 +555,7 @@ propose.new.structure <- function(M, max.parents = 3,
     }
   }
   
-  list(M = M, rev.ratio = rev.ratio)
+  list(M = M, rev.ratio = rev.ratio, move = move)
 }
 ######################################################################
 update.node <- function(M, max.parents, saved.scores, node, verbose = FALSE)
@@ -786,7 +808,7 @@ forbidden.additions <- function(M, node, max.parents = 3)
 } 
 ######################################################################
 check.qtlnet <- function(object,
-                         min.prob = 0.5,
+                         min.prob = 0.9,
                          correct = TRUE,
                          verbose = FALSE,
                          ...)

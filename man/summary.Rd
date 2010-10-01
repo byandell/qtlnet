@@ -11,7 +11,7 @@ Print and summary methods for qtlnet objects.
 \method{print}{qtlnet}(x, cutoff = 0.01, digits = 3, \dots)
 \method{summary}{qtlnet}(object, parent.patterns = FALSE, \dots)
 \method{print}{summary.qtlnet}(x, \dots)
-check.qtlnet(object, min.prob = 0.5, correct = TRUE, verbose = FALSE, \dots)
+check.qtlnet(object, min.prob = 0.9, correct = TRUE, verbose = FALSE, \dots)
 }
 \arguments{
   \item{x,object}{

@@ -105,6 +105,7 @@ get.ss <- function(cross, phenoi, parents, addcov, intcov, thr, method)
 est.qtlnet <- function(qtlnet.object, ..., verbose = TRUE)
 {
   ## Get fit for average network.
+  ## This does not incorporate QTL estimates same way as loci.qtlnet.
   
   cross <- qtlnet.object$cross
   ## Make sure cross object has genotype probabilities.
