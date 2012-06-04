@@ -118,7 +118,9 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
               row.names = FALSE, col.names = FALSE, quote = FALSE)
 }
 ####################################################################################
-qtlnet.phase2 <- function(dirpath, index = NULL, ..., verbose = FALSE)
+qtlnet.phase2 <- function(dirpath, index = NULL, ...,
+                          groups, cross, pheno.col, threshold, max.parents, parents,
+                          verbose = FALSE)
 {
   ## PHASE 2: Compute BIC scores. Parallelize.
   ##          Slow. Run on condor nodes.
@@ -160,7 +162,8 @@ qtlnet.phase2 <- function(dirpath, index = NULL, ..., verbose = FALSE)
        compress = TRUE)
 }
 ####################################################################################
-qtlnet.phase3 <- function(dirpath, index = NULL, ...)
+qtlnet.phase3 <- function(dirpath, index = NULL, ...,
+                          groups, bic, cross, pheno.col, max.parents)
 {
   ## PHASE 3: Sample Markov chain (MCMC). Parallelize.
   ##          Fast: Run on scheduler.
@@ -203,7 +206,9 @@ qtlnet.phase3 <- function(dirpath, index = NULL, ...)
        compress = TRUE)
 }
 ####################################################################################
-qtlnet.phase4 <- function(dirpath, index = NULL, ...)
+qtlnet.phase4 <- function(dirpath, index = NULL, ...,
+                          nruns, cross, pheno.col, threshold, max.parents, saved.scores,
+                          init.edges, M0, addcov, intcov, nSamples, thinning)
 {
   ## PHASE 4: Sample Markov chain (MCMC). Parallelize.
   ##          Slow. Run on condor nodes.
@@ -243,7 +248,9 @@ qtlnet.phase4 <- function(dirpath, index = NULL, ...)
        compress = TRUE)
 }
 ####################################################################################
-qtlnet.phase5 <- function(dirpath, index = NULL, missing.ok = FALSE, ..., verbose = FALSE)
+qtlnet.phase5 <- function(dirpath, index = NULL, missing.ok = FALSE, ...,
+                          nruns,
+                          verbose = FALSE)
 {
   ## PHASE 5: Combine results for post-processing.
   ##          Fast: Run on scheduler.

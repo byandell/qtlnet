@@ -102,11 +102,10 @@ scanone.summary <- function(cross, pheno.col, addcov, intcov, threshold,
 {
   ## This is the big time commitment.
   scan <- scanone(cross, pheno.col = pheno.col,
-                  addcov = addcov, intcov = intcov, method = method)
+                  addcovar = addcov, intcovar = intcov, method = method)
   
   ## Mainly intersted in this summary to determine QTLs.
-  ss <- summary(scan,
-                format = ifelse(length(pheno.col) == 1, "onepheno", "allpeaks"),
+  summary(scan, format = ifelse(length(pheno.col) == 1, "onepheno", "allpeaks"),
                 threshold = threshold)
 }
 ###########################################################################################

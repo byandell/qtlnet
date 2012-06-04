@@ -1,5 +1,5 @@
 nruns		= 100 ;
-cross.name	= "cross" ;
+cross.name	= "Pscdbp" ;
 pheno.col	= 1:13 ;
 max.parents	= 12 ;
 step		= 1 ;

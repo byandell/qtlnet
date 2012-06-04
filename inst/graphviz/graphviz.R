@@ -1,4 +1,6 @@
-## Can this be rewritten to use graph.qtlnet output?
+## This was written to handle graphviz but was later abandoned.
+## Can this be rewritten to use graph.qtlnet output? (to reduce code duplication)
+
 Rgraphviz.qtlnet <- function(graph, layout.method = "dot", ...)
 {
   require(Rgraphviz)

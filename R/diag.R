@@ -1,37 +1,24 @@
-newfun <- function(qtlnet.object, burnin = attr(qtlnet.object, "burnin"),
-                   wh = which.min(meanbic(qtlnet.object, burnin)))
-{
-  ## Nice idea, but not working the way I thought.
-  ## Want sumM to be score of posterior for edge.
-  M1 <- qtlnet.object$M[,,wh]
-  M1 <- t(apply(M1, 1,
-                function(x) {
-                  s <- sum(x)
-                  if(s > 0)
-                    x <- x / s
-                  x
-                }))
-  sumM <- M2 <- M1
-  for(i in seq(2, nrow(M1) - 1)) {
-    M2 <- M1 %*% M2
-    sumM <- sumM + M2
-  }
-  upM <- (sumM + t(sumM))[upper.tri(sumM)]
+######################################################################
+# diag.R
+#
+# Brian S Yandell
+#
+#     This program is free software; you can redistribute it and/or
+#     modify it under the terms of the GNU General Public License,
+#     version 3, as published by the Free Software Foundation.
+# 
+#     This program is distributed in the hope that it will be useful,
+#     but without any warranty; without even the implied warranty of
+#     merchantability or fitness for a particular purpose.  See the GNU
+#     General Public License, version 3, for more details.
+# 
+#     A copy of the GNU General Public License, version 3, is available
+#     at http://www.r-project.org/Licenses/GPL-3
+#
+# Contains: dist.qtlnet, edgematch.qtlnet, mds.qtlnet, plotbic.qtlnet,
+# 
+######################################################################
 
-  runM <- apply(qtlnet.object$M, 1:2, sum)
-  runM <- (runM + t(runM))[upper.tri(runM)]
-  plot(upM,runM)
-  M <- qtlnet.object$M[,,wh]
-  whs <- which(M[upper.tri(M)] > 0.9 | t(M)[upper.tri(M)] > 0.9)
-  points(upM[whs], runM[whs], col = "red")
-
-  ## This is easier to understand.
-  ## Does M1 have an edge, and does it agree with most of the runs?
-  M1u <- (M1+t(M1))[upper.tri(M1)]
-  plot(M1u, runM)
-  points(M1u[whs], runM[whs], col = "red")
-  abline(v=0.9)
-}  
 dist.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex = 5)
 {
   ## Fold to unique edges; threshold on min.prob.
@@ -49,6 +36,7 @@ dist.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex
   abline(h = out$sum[wh], v = out$sum[wh], col = "gray")
   out
 }
+######################################################################
 edgematch.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex = 5)
 {
   ## Deconvolve this fold to find out what pairs.
@@ -68,6 +56,7 @@ edgematch.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan"
     points(which(common[,i]), rep(i, sum(common[,i])), col = ifelse(i==wh, "red", "black"))
   }
 }
+######################################################################
 mds.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex = 5)
 {
   M <- apply(qtlnet.object$Mav, 3, fold.M)
@@ -87,39 +76,7 @@ mds.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex 
   ## text(x, y, labels = row.names(M), cex=.7)
   invisible(list(M=M, d=d, fit = fit, mbic = mbic))
 }
-zero.M <- function(qtlnet.object, run = which.min(mbic),
-                   burnin = attr(qtlnet.object, "burnin"))
-{
-  ## apply(out.qtlnet$Mav,3, function(x) sum(x >.9))
-  ## round(apply(out.qtlnet$Mav,3, function(x) mean(x[x >.9])),3)
-  nSamples <- attr(qtlnet.object, "nSamples")
-  runs <- length(nSamples)
-  run.id <- rep(seq(runs), nSamples)
-  M0 <- attr(qtlnet.object, "M0")
-  ravel <- row(as.matrix(M0)) > col(as.matrix(M0))
-  
-  tmpfn <- function(post.model, burnin, ravel) {
-    M <- apply(model2M(post.model), 1:2, sum)
-    (M[ravel] + t(M)[ravel]) == 0
-  }
-  cat("Extracting network matrices...\n")
-  out <- matrix(unlist(tapply(qtlnet.object$post.model, run.id, tmpfn,
-                              burnin, ravel)),
-                ncol = runs)
-  
-  mbic <- meanbic(qtlnet.object, burnin)
-  wh <- which.min(mbic)
-  
-  data.frame(nonzero = apply(out, 2, sum),
-             agree = apply(out, 2, function(x,y) sum(x == y & y > 0),
-               out[,run]),
-             mean.bic = mbic)
-}
-best.qtlnet <- function(x, burnin = attr(x, "burnin"),
-                        wh = which.min(meanbic(x, burnin)))
-{
-  subset(x, wh)
-}
+######################################################################
 plotbic.qtlnet <- function(x, ..., smooth = TRUE)
 {
   nSamples <- attr(x, "nSamples")
@@ -159,6 +116,75 @@ plotbic.qtlnet <- function(x, ..., smooth = TRUE)
       tapply(x$post.bic, run.id, splotfn, burnin)
   }
   title(paste("BIC samples for", runs, "MCMC", ifelse(runs == 1, "run", "runs")))
+}
+
+######################################################################
+newfun <- function(qtlnet.object, burnin = attr(qtlnet.object, "burnin"),
+                   wh = which.min(meanbic(qtlnet.object, burnin)))
+{
+  ## Nice idea, but not working the way I thought.
+  ## Want sumM to be score of posterior for edge.
+  M1 <- qtlnet.object$M[,,wh]
+  M1 <- t(apply(M1, 1,
+                function(x) {
+                  s <- sum(x)
+                  if(s > 0)
+                    x <- x / s
+                  x
+                }))
+  sumM <- M2 <- M1
+  for(i in seq(2, nrow(M1) - 1)) {
+    M2 <- M1 %*% M2
+    sumM <- sumM + M2
+  }
+  upM <- (sumM + t(sumM))[upper.tri(sumM)]
+
+  runM <- apply(qtlnet.object$M, 1:2, sum)
+  runM <- (runM + t(runM))[upper.tri(runM)]
+  plot(upM,runM)
+  M <- qtlnet.object$M[,,wh]
+  whs <- which(M[upper.tri(M)] > 0.9 | t(M)[upper.tri(M)] > 0.9)
+  points(upM[whs], runM[whs], col = "red")
+
+  ## This is easier to understand.
+  ## Does M1 have an edge, and does it agree with most of the runs?
+  M1u <- (M1+t(M1))[upper.tri(M1)]
+  plot(M1u, runM)
+  points(M1u[whs], runM[whs], col = "red")
+  abline(v=0.9)
+}
+zero.M <- function(qtlnet.object, run = which.min(mbic),
+                   burnin = attr(qtlnet.object, "burnin"))
+{
+  ## apply(out.qtlnet$Mav,3, function(x) sum(x >.9))
+  ## round(apply(out.qtlnet$Mav,3, function(x) mean(x[x >.9])),3)
+  nSamples <- attr(qtlnet.object, "nSamples")
+  runs <- length(nSamples)
+  run.id <- rep(seq(runs), nSamples)
+  M0 <- attr(qtlnet.object, "M0")
+  ravel <- row(as.matrix(M0)) > col(as.matrix(M0))
+  
+  tmpfn <- function(post.model, burnin, ravel) {
+    M <- apply(model2M(post.model), 1:2, sum)
+    (M[ravel] + t(M)[ravel]) == 0
+  }
+  cat("Extracting network matrices...\n")
+  out <- matrix(unlist(tapply(qtlnet.object$post.model, run.id, tmpfn,
+                              burnin, ravel)),
+                ncol = runs)
+  
+  mbic <- meanbic(qtlnet.object, burnin)
+  wh <- which.min(mbic)
+  
+  data.frame(nonzero = apply(out, 2, sum),
+             agree = apply(out, 2, function(x,y) sum(x == y & y > 0),
+               out[,run]),
+             mean.bic = mbic)
+}
+best.qtlnet <- function(x, burnin = attr(x, "burnin"),
+                        wh = which.min(meanbic(x, burnin)))
+{
+  subset(x, wh)
 }
 meanbic <- function(qtlnet.object, burnin = attr(qtlnet.object, "burnin"))
 {

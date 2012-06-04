@@ -1,0 +1,12 @@
+Parallelization of R/qtlnet using CHCT
+
+The basic idea to create initial files offline
+    cross.RData	  cross object with all needed genotypes and phenotypes
+    params.txt	  parameter settings for Phase1
+
+The cross.RData is Pscdbp.RData available in the data folder.
+
+The skeleton for creating the offline files should be in qtlnet.phase0 but it is not written yet.
+Basically, cross.RData should contain only needed data to conserve size, and should have
+genoprobs already calculated. Best to do this in a staging directory so that there is a record
+and it is reproducible.

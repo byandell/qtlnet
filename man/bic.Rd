@@ -12,7 +12,6 @@ Pre-compute BIC values for qtlnet sampling to speed up MCMC sampling.
 bic.qtlnet(cross, pheno.col, threshold, addcov = NULL, intcov = NULL,
   max.parents = 3, parents, verbose = TRUE, \dots)
 bic.join(cross, pheno.col, \dots, max.parents = 3)
-\method{c}{qtlnet}(\dots)
 data(Pscdbp.bic)
 }
 %- maybe also 'usage' for other objects documented here.

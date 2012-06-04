@@ -5,8 +5,9 @@
 Write resulting graph as text file
 }
 \usage{
-write.qtlnet(x, filename, edges, loci.list,
-  include.qtl = TRUE, digits = 3, \dots)
+write.qtlnet(x, filename, edges, loci.list, include.qtl = TRUE,
+    est.list, include.est = TRUE,
+    digits = 3, col.names = TRUE, \dots)
 }
 \arguments{
   \item{x}{
@@ -27,8 +28,17 @@ call to \code{\link{loci.qtlnet}}.
   \item{include.qtl}{
 Include QTL in graph if \code{TRUE} and \code{loci.list} is not \code{NULL}.
 }
+\item{est.list}{
+  List of estimates from internal est.qtlnet?
+}
+\item{include.est}{
+  Include estimate if \code{TRUE}.
+}
   \item{digits}{
 Number of significant digits for \code{width}.
+}
+\item{col.names}{
+Character vector of column names.
 }
   \item{\dots}{
 Additional arguments passed to called routines.

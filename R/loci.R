@@ -1,3 +1,24 @@
+######################################################################
+# diag.R
+#
+# Brian S Yandell
+#
+#     This program is free software; you can redistribute it and/or
+#     modify it under the terms of the GNU General Public License,
+#     version 3, as published by the Free Software Foundation.
+# 
+#     This program is distributed in the hope that it will be useful,
+#     but without any warranty; without even the implied warranty of
+#     merchantability or fitness for a particular purpose.  See the GNU
+#     General Public License, version 3, for more details.
+# 
+#     A copy of the GNU General Public License, version 3, is available
+#     at http://www.r-project.org/Licenses/GPL-3
+#
+# Contains: loci.qtlnet, est.qtlnet
+# 
+######################################################################
+
 loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
                         ...)
 {
@@ -75,33 +96,6 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
   QTLnodes
 }
 ######################################################################
-get.ss <- function(cross, phenoi, parents, addcov, intcov, thr, method)
-{
-  ## Get SS for model. Includes chr and pos.
-
-  ## Reduce to nonmissing data.
-  cov.names <- unique(c(addcov, intcov))
-  tmp <- unique(c(phenoi, parents, cov.names))
-  pheno.na <- apply(cross$pheno[, tmp, drop = FALSE], 1,
-                    function(x) any(is.na(x)))
-  crossi <- subset(cross, ind = !pheno.na)
-
-  ## Determine parent covariates.
-  pacov.dat <- NULL
-  if(!is.null(parents))
-    pacov.dat <- as.matrix(crossi$pheno[, parents, drop = FALSE])
-
-  ## Determine additive and interactive covariates.
-  addcov.dat <- create.cov.matrix(crossi, cov.names = cov.names)
-  addcov.dat <- cbind(pacov.dat, addcov.dat)
-  intcov.dat <- create.cov.matrix(crossi, cov.names = intcov)
-  dimnames(addcov.dat)[[2]] <- make.names(dimnames(addcov.dat)[[2]])
-  dimnames(intcov.dat)[[2]] <- make.names(dimnames(intcov.dat)[[2]])
-    
-  ss <- scanone.summary(crossi, phenoi, addcov.dat, intcov.dat, thr, method)
-  list(ss = ss, cross = crossi, covar = addcov.dat, intcovar = intcov.dat)
-}
-######################################################################
 est.qtlnet <- function(qtlnet.object, ..., verbose = TRUE)
 {
   ## Get fit for average network.
@@ -146,8 +140,9 @@ est.qtlnet <- function(qtlnet.object, ..., verbose = TRUE)
         qs <- paste("(", paste(intcov.names, collapse = "+"), ")*",
                     "(", qs, ")", sep = "")
       
-      form <- formula(paste("y ~", qs,  "+",
-                            paste(cov.names, collapse = "+")))
+      form <- formula(paste("y ~", qs,
+                            ifelse(is.null(cov.names), "",
+                                   paste(  "+", paste(cov.names, collapse = "+")))))
       est[[i]] <- fitqtl(crossi, i, qtl, covar, form, "hk",
                          get.ests = TRUE)$ests$ests
     }
@@ -160,6 +155,36 @@ est.qtlnet <- function(qtlnet.object, ..., verbose = TRUE)
   }
   names(est) <- pheno.nms
   est
+}
+
+######################################################################
+get.ss <- function(cross, phenoi, parents, addcov, intcov, thr, method)
+{
+  ## Get SS for model. Includes chr and pos.
+
+  ## Reduce to nonmissing data.
+  cov.names <- unique(c(addcov, intcov))
+  tmp <- unique(c(phenoi, parents, cov.names))
+  pheno.na <- apply(cross$pheno[, tmp, drop = FALSE], 1,
+                    function(x) any(is.na(x)))
+  crossi <- subset(cross, ind = !pheno.na)
+
+  ## Determine parent covariates.
+  pacov.dat <- NULL
+  if(!is.null(parents))
+    pacov.dat <- as.matrix(crossi$pheno[, parents, drop = FALSE])
+
+  ## Determine additive and interactive covariates.
+  addcov.dat <- create.cov.matrix(crossi, cov.names = cov.names)
+  addcov.dat <- cbind(pacov.dat, addcov.dat)
+  if(!is.null(addcov.dat))
+    dimnames(addcov.dat)[[2]] <- make.names(dimnames(addcov.dat)[[2]])
+  intcov.dat <- create.cov.matrix(crossi, cov.names = intcov)
+  if(!is.null(intcov.dat))
+    dimnames(intcov.dat)[[2]] <- make.names(dimnames(intcov.dat)[[2]])
+    
+  ss <- scanone.summary(crossi, phenoi, addcov.dat, intcov.dat, thr, method)
+  list(ss = ss, cross = crossi, covar = addcov.dat, intcovar = intcov.dat)
 }
 ######################################################################
 get.parents <- function(pheno, pheno.net.str)

@@ -10,9 +10,9 @@ Catenate or subset qtlnet object(s).
 Multiple qtlnet objects can be catenated together or subsetted by run.
 }
 \usage{
-subset.qtlnet(x, run, \dots)
-c.qtlnet(\dots)
-best.qtlnet(x, burnin)
+\method{subset}{qtlnet}(x, run, \dots)
+\method{c}{qtlnet}(\dots)
+best.qtlnet(x, burnin = attr(x, "burnin"), wh = which.min(meanbic(x, burnin)))
 }
 \arguments{
   \item{x}{
@@ -25,6 +25,7 @@ Numeric index to desired run. Must be between 0 and number of runs.
 Proportion of MCMC samples to be considered as burnin. Taken from
 \code{qtlnet} object usually.
 }
+\item{wh}{Number identifying which model is best.}
   \item{\dots}{
 For \code{c.qtlnet}, objects of class \code{qtlnet} to be
 joined. Ignored for \code{subset.qtlnet}.
