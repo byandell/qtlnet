@@ -1,0 +1,5 @@
+R/qdg was a separate package, but is now folded into this package.
+It depends on pcalg, which depends on ggm, which depends on gRbase.
+The gRbase package depends on graph and RBGL, which are Bioconductor packages.
+Use bioclite() to install graph and RBGL, then use install.packages() to install pcalg.
+

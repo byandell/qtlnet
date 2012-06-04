@@ -42,6 +42,9 @@ export(print.qtlnet)
 export(summary.qtlnet)
 export(print.summary.qtlnet)
 
+## QDG routines
+export(qdgAlgo)
+export(graph.qdg)
 
 ##############################################################################
 # S3method declarations.  These will allow generic methods to function properly
