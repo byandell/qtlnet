@@ -46,6 +46,20 @@ export(print.summary.qtlnet)
 export(qdgAlgo)
 export(graph.qdg)
 
+## Example routines.
+export(generate.qtl.markers)
+export(generate.qtl.pheno)
+
+## SEM routines.
+export(qdg.sem)
+S3method(summary, qdg.sem)
+S3method(print, qdg.sem)
+
+## perm.test routines.
+export(qdg.perm.test)
+S3method(summary, qdg.perm.test)
+S3method(print, qdg.perm.test)
+
 ##############################################################################
 # S3method declarations.  These will allow generic methods to function properly
 # with functions such as "plot.qb" declared in the package.

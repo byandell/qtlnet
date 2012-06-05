@@ -1,4 +1,5 @@
 nruns		= 100 ;
+cross.file      = "Pscdbp.RData" ;
 cross.name	= "Pscdbp" ;
 pheno.col	= 1:13 ;
 max.parents	= 12 ;

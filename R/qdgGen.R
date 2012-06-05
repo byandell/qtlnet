@@ -18,6 +18,7 @@
 ## as http://www.gnu.org/copyleft or by writing to the Free Software
 ## Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 ##
+## Routines: generate.qtl.markers, generate.qtl.pheno
 ##############################################################################
 #########################################
 #########################################
@@ -28,7 +29,7 @@
 #########################################
 
 #########################################
-produce.qtl.sample <- function(cross, n.phe, nqtl = 3)
+generate.qtl.markers <- function(cross, n.phe, nqtl = 3)
 {
   ## randomly selects 2 or 3 markers (per phenotype) 
   nqtl <- array(nqtl, n.phe)
@@ -56,6 +57,21 @@ produce.qtl.sample <- function(cross, n.phe, nqtl = 3)
   list(allqtl = allqtls, markers = markers)
 }
 
+##################################################################
+generate.qtl.pheno <- function(name = c("acyclic","acyc2or3","cyclica","cyclicb","cyclicc"),
+                               cross,
+                               bp, bq, stdev, allqtl,
+                               burnin = 2000, geno)
+{
+  name <- match.arg(name)
+  switch(name,
+         acyclic = { generate.data(cross, bp, bq, stdev, allqtl) },
+         acyc2or3 = { generate.data.2or3(cross, bp, bq, stdev, allqtl) },
+         cyclica = { generate.data.graph.a(cross, burnin, bq, bp, stdev, geno) },
+         cyclicb = { generate.data.graph.b(cross, burnin, bq, bp, stdev, geno) },
+         cyclicc = { generate.data.graph.c(cross, burnin, bq, bp, stdev, geno) })
+}
+         
 ##################################################################
 ## Acyclic example (100 phenotypes network)
 ##
@@ -388,10 +404,9 @@ generate.data.2or3 <- function(cross, bp, bq, stdev, allqtl)
   cross
 }
 
-
 ###############
 ###############
-                                        # cyclic graphs 
+## cyclic graphs 
 ###############
 ###############
 
@@ -406,8 +421,6 @@ compute.mu <- function(ind.geno,bq){
     mu[i] <- sum(bq[ind.geno[(3 * (i - 1)) + (1:3)]])
   mu
 }
-
-
 
 ############################################################
 ## generate the phenotype data. Each data point is generated 

@@ -75,7 +75,7 @@ graph.qdg(x, \dots)
 }
 \references{Chaibub Neto et al. (2008) Inferring causal phenotype networks from 
             segregating populations. Genetics 179: 1089-1100.}
-\seealso{ \code{\link[pcalg]{pcAlgo}} }
+\seealso{ \code{\link[pcalg]{skeleton}} }
 \examples{
 ## simulate a genetic map (20 autosomes, 10 not equaly spaced markers per 
 ## chromosome)

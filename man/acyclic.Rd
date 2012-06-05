@@ -32,10 +32,10 @@ acyclic graphs.
 \code{\link[qtl]{sim.cross}}, 
 \code{\link[qtl]{sim.geno}},
 \code{\link[qtl]{sim.map}}, 
-\code{\link[pcalg]{pcAlgo}},
+\code{\link[pcalg]{skeleton}},
 \code{\link{qdgAlgo}},
 \code{\link{graph.qdg}},
-\code{\link{generate.data}}
+\code{\link{generate.qtl.pheno}}
 }
 \references{Chaibub Neto et al. (2008) Inferring causal phenotype networks from 
             segregating populations. Genetics 179: 1089-1100.}
@@ -59,7 +59,7 @@ mycross <- sim.geno(mycross,n.draws=1)
 
 
 ## Produce 100 QTL at three markers apiece.
-acyclic.qtl <- produce.qtl.sample(cross=mycross,n.phe=100)
+acyclic.qtl <- generate.qtl.markers(cross=mycross,n.phe=100)
 
 ## Generate data from directed graph.
 bp <- runif(100,0.5,1)
@@ -68,8 +68,9 @@ bq <- matrix(0,100,3)
 bq[,1] <- runif(100,0.2,0.4)
 bq[,2] <- bq[,1]+0.1
 bq[,3] <- bq[,2]+0.1
-acyclic.data <- generate.data(cross = mycross, bp = bp, bq = bq,
-  stdev = stdev, allqtl = acyclic.qtl$allqtl)
+## Generate phenotypes.
+acyclic.data <- generate.qtl.pheno("acyclic", cross = mycross,
+  bp = bp, bq = bq, stdev = stdev, allqtl = acyclic.qtl$allqtl)
 
 acyclic.qdg <- qdgAlgo(cross=acyclic.data, 
 		phenotype.names=paste("y",1:100,sep=""),
@@ -85,8 +86,8 @@ save(acyclic.DG, acyclic.qtl, acyclic.data, acyclic.qdg,
 data(acyclic)
 
 dims <- dim(acyclic.data$pheno)
-pc <- skeleton(list(c = cor(acyclic.data$pheno), n = dims[1]),
-               gaussCItest, p = dims[2], alpha = 0.005)
+SuffStat <- list(C = cor(acyclic.data$pheno), n = dims[1])
+pc <- skeleton(SuffStat, gaussCItest, p = dims[2], alpha = 0.005)
 summary(pc)
 
 summary(graph.qdg(acyclic.qdg))

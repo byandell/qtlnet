@@ -33,7 +33,7 @@ igraph.qdg <- function(x,
     best <- which(x$Solutions$BIC == min(x$Solutions$BIC))
     pheno.output <- data.frame(x$Solutions$solutions[[best]],rep(0,nrow(x$Solutions$solutions[[best]])))
   }
-  else if (inherits(x, "qdgSEM")){ 
+  else if (inherits(x, "qdg.sem")){ 
     best <- which(x$BIC.SEM[,1] == min(x$BIC.SEM[,1]))
     pheno.output <- data.frame(x$Solutions$solutions[[best]],x$path.coeffs)
   }

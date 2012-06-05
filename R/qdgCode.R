@@ -20,10 +20,10 @@
 ##
 ## Routines: qdgAlgo, summary.qdgAlgo, print.qdgAlgo
 ##           qdg.perm.test
-##           summary.qdgSEM, print.qdgSEM, summary.qdg.perm.test, print.qdg.perm.test
+##           summary.qdg.sem, print.qdg.sem, summary.qdg.perm.test, print.qdg.perm.test
 ##############################################################################
 
-## This routine needs to be converted to igraph. See igraph.R for ideas.
+## Results of qdgAlgo can be plotted using graph.qdg (using igraph).
 
 qdgAlgo <- function(cross, 
                      phenotype.names, 
@@ -586,14 +586,14 @@ summary.qdgAlgo <- function(object, ...)
   cat("\nBest solution is solution number:\n")
   print(object$best.lm)
   cat("\nCaution:\n")
-  print("If one of the solutions is a cyclic graph you should run qdgSEM in order to score the networks using SEM.")
+  print("If one of the solutions is a cyclic graph you should run qdg.sem in order to score the networks using SEM.")
   invisible()
 }
 
 print.qdgAlgo <- function(x, ...) summary(x, ...)
 
 #################################################################################################
-qdgSEM <- function(qdgAlgoObject, cross) 
+qdg.sem <- function(qdgAlgoObject, cross) 
 {
   #################################################################################
   score.sem.models <- function(cross,pheno.names,all.solutions,steptol,addcov=NULL) {
@@ -714,12 +714,12 @@ qdgSEM <- function(qdgAlgoObject, cross)
   mylist$marker.names <- qdgAlgoObject$marker.names
   mylist$phenotype.names <- qdgAlgoObject$phenotype.names
   mylist$dropped <- ss[[3]]
-  class(mylist) <- c("qdgSEM", "qdg", "list")
+  class(mylist) <- c("qdg.sem", "qdg", "list")
   
   mylist
 }
 
-summary.qdgSEM <- function(object, ...)
+summary.qdg.sem <- function(object, ...)
 {
   cat("\nBest SEM solution:\n")
   print(object$Solution$solution[[object$best.SEM]])
@@ -729,13 +729,13 @@ summary.qdgSEM <- function(object, ...)
   cat("\nBest SEM solution is solution number:\n")
   print(object$best.SEM)
   if(!is.null(object$dropped)) {
-    cat(length(object$dropped), "qdgSEM solution were dropped; sem() failed for graphs",
+    cat(length(object$dropped), "qdg.sem solution were dropped; sem() failed for graphs",
         paste(object$dropped, collapse = ","))
   }
   invisible()
 }
 
-print.qdgSEM <- function(x, ...) summary(x, ...)
+print.qdg.sem <- function(x, ...) summary(x, ...)
 
 #################################################################################################
 qdg.perm.test <- function(cross,nperm,node1,node2,common.cov=NULL,DG,QTLs,addcov=NULL,intcov=NULL)

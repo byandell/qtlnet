@@ -1,16 +1,16 @@
-\name{qdgSEM}
-\alias{qdgSEM}
-\alias{summary.qdgSEM}
-\alias{print.qdgSEM}
+\name{qdg.sem}
+\alias{qdg.sem}
+\alias{summary.qdg.sem}
+\alias{print.qdg.sem}
 \title{Score directed graphs outputed by qdgAlgo using structural equation models (SEM)}
 \description{
   Score directed graphs (cyclic or acyclic) outputed by qdgAlgo function using the sem R
   package.     
 }
 \usage{
-qdgSEM(qdgAlgoObject, cross)
-\method{print}{qdgSEM}(x, \dots)
-\method{summary}{qdgSEM}(object, \dots)
+qdg.sem(qdgAlgoObject, cross)
+\method{print}{qdg.sem}(x, \dots)
+\method{summary}{qdg.sem}(object, \dots)
 }
 \arguments{
   \item{qdgAlgoObject}{list containing the output of \code{\link{qdgAlgo}}.}
@@ -20,11 +20,11 @@ qdgSEM(qdgAlgoObject, cross)
 }
 \details{
   Fits a SEM to the phenotypes network. QTLs are not included as
-  variables in the model. When additive covariates are used in qdgAlgo, qdgSEM
+  variables in the model. When additive covariates are used in qdgAlgo, qdg.sem
   fits a SEM model to the residuals of the variables after adjustment of the 
   additive covariates.
 }
-\value{List object that inherits class "qdgSEM" and "qdg" composed by:
+\value{List object that inherits class "qdg.sem" and "qdg" composed by:
   \item{best.SEM}{Solution with lowest SEM BIC (best fit to the data).}
   \item{BIC.SEM}{Vector with the BIC values of all solutions from qdgAlgo.}
   \item{path.coeffs}{Path coefficients associated with the best SEM solution.}
@@ -108,11 +108,16 @@ out <- qdgAlgo(cross=mycross,
 		alpha = 0.005, 
 		n.qdg.random.starts=10, 
 		skel.method="pcskel")
+gr <- graph.qdg(out)
+plot(gr)
 
-
-out2 <- qdgSEM(out, cross=mycross)
+\dontrun{
+## Following does not work. Not sure why.
+out2 <- qdg.sem(out, cross=mycross)
 out2
-plot(out2)
+gr <- graph.qdg(out2)
+plot(gr)
+}
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

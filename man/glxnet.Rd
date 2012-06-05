@@ -50,6 +50,8 @@ out <- qdgAlgo(cross=glxnet,
 		skel.method="udgskel",
 		udg.order=6)
 out
-plot(out)
+gr <- graph.qdg(out)
+plot(gr)
+## Or use tkplot().
 }
 \keyword{datagen}

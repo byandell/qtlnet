@@ -18,6 +18,15 @@
 \references{Chaibub Neto et al. (2008) Inferring causal phenotype networks from 
   segregating populations. Genetics 179: 1089-1100.}
 \usage{data(cyclica)}
+\seealso{
+\code{\link[qtl]{sim.cross}}, 
+\code{\link[qtl]{sim.geno}},
+\code{\link[qtl]{sim.map}}, 
+\code{\link[pcalg]{skeleton}},
+\code{\link{qdgAlgo}},
+\code{\link{graph.qdg}},
+\code{\link{generate.qtl.pheno}}
+}
 \examples{
 \dontrun{
 bp <- matrix(0, 6, 6)
@@ -31,10 +40,10 @@ mymap <- sim.map(len = rep(100,20), n.mar = 10, eq.spacing = FALSE,
 mycross <- sim.cross(map = mymap, n.ind = 200, type = "f2")
 mycross <- sim.geno(mycross, n.draws = 1)
 
-cyclica.qtl <- produce.qtl.sample(cross = mycross, n.phe = 6)
+cyclica.qtl <- generate.qtl.markers(cross = mycross, n.phe = 6)
 mygeno <- pull.geno(mycross)[, unlist(cyclica.qtl$markers)]
 
-cyclica.data <- generate.data.graph.a(cross = mycross, burnin = 2000,
+cyclica.data <- generate.qtl.pheno("cyclica", cross = mycross, burnin = 2000,
   bq = c(0.2,0.3,0.4), bp = bp, stdev = stdev, geno = mygeno)
 save(cyclica.qtl, cyclica.data, file = "cyclica.RData", compress = TRUE)
 }
