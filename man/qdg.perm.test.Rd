@@ -60,11 +60,12 @@ qdg.perm.test(cross, nperm, node1, node2, common.cov = NULL,
 
 
 \examples{
-\dontrun{
-example(glxnet)
+data(glxnet)
+glxnet.cross <- calc.genoprob(glxnet.cross)
+set.seed(1234)
+glxnet.cross <- sim.geno(glxnet.cross)
+## Should really use nperm = 1000 here.
+qdg.perm.test(glxnet.cross, nperm = 10, "Glx", "Slc1a2",
+   DG = glxnet.qdg$DG, QTLs = glxnet.qtl)
 }
-}
-
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
 \keyword{ models }

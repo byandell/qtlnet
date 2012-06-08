@@ -99,8 +99,6 @@ size.qtlnet(pheno.col, max.parents)
 #########################################
 ## STEP 1: Preparation. Fast. Needed in steps 2 and 3.
 
-library(qtlnet) ## depends on R/qtl, R/igraph.
-
 pheno.col <- 1:13
 max.parents <- 12
 threshold <- 3.83
@@ -124,9 +122,6 @@ save(cross, pheno.col, max.parents, threshold, parents, groups,
 ## STEP 2: Compute BIC scores. Parallelize.
 
 ## NB: Configuration of parallelization determined using Step 1 results.
-
-library(qtlnet) ## depends on R/qtl, R/igraph.
-
 ## Load Step 1 computations.
 load("Step1.RData")
 
@@ -145,10 +140,7 @@ for(i in seq(nrow(groups)))
 ## STEP 3: Sample Markov chain (MCMC). Parallelize.
 
 ## NB: n.runs sets the number of parallel runs.
-
 n.runs <- 100
-
-library(qtlnet) ## depends on R/qtl, R/igraph.
 
 ## Load Step 1 computations.
 load("Step1.RData")
@@ -177,10 +169,7 @@ for(i in seq(n.runs))
 ## STEP 4: Combine results for post-processing.
 
 ## NB: n.runs needed from Step 3.
-
 n.runs <- 100
-
-library(qtlnet) ## depends on R/qtl, R/igraph.
 
 ## Combine outputs together.
 outs.qtlnet <- list()
@@ -189,7 +178,6 @@ for(i in seq(n.runs))
   load(paste("mcmc", i, ".RData", sep = ""))
   outs.qtlnet[[i]] <- mcmc
 }
-
 out.qtlnet <- c.qtlnet(outs.qtlnet)
 summary(out.qtlnet)
 print(out.qtlnet)

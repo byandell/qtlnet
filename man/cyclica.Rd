@@ -9,7 +9,7 @@
   error variances at 0.025 and the QTL effects at 0.2, 0.3 
   and 0.4 for the three F2 genotypes. We used 
   a burn-in of 2000 for the Gibbs sampler.}
-\details{For cyclic graphs, the output of the qdgAlgo function
+\details{For cyclic graphs, the output of the qdg function
   computes the log-likelihood up to the normalization constant
   (un-normalized log-likelihood). We can use the un-normalized
   log-likelihood to compare cyclic graphs with reversed
@@ -23,7 +23,7 @@
 \code{\link[qtl]{sim.geno}},
 \code{\link[qtl]{sim.map}}, 
 \code{\link[pcalg]{skeleton}},
-\code{\link{qdgAlgo}},
+\code{\link{qdg}},
 \code{\link{graph.qdg}},
 \code{\link{generate.qtl.pheno}}
 }
@@ -49,7 +49,7 @@ save(cyclica.qtl, cyclica.data, file = "cyclica.RData", compress = TRUE)
 }
 
 data(cyclica)
-out <- qdgAlgo(cross=cyclica.data, 
+out <- qdg(cross=cyclica.data, 
 		phenotype.names=paste("y",1:6,sep=""),
 		marker.names=cyclica.qtl$markers, 
 		QTL=cyclica.qtl$allqtl, 

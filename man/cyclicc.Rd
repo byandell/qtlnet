@@ -16,7 +16,7 @@
   coefficient. Since beta[5,2] is greater than beta[2,5], the QDG method
   should infer the direction from 2 to 5.
 }
-\details{For cyclic graphs, the output of the qdgAlgo function computes the 
+\details{For cyclic graphs, the output of the qdg function computes the 
 log-likelihood up to the normalization constant (un-normalized log-likelihood). We can use the un-normalized log-likelihood to compare cyclic graphs with reversed directions (since they have the same normalization constant). However we 
 cannot compare cyclic and acyclic graphs.}
 \references{Chaibub Neto et al. (2008) Inferring causal phenotype networks from 
@@ -27,7 +27,7 @@ cannot compare cyclic and acyclic graphs.}
 \code{\link[qtl]{sim.geno}},
 \code{\link[qtl]{sim.map}}, 
 \code{\link[pcalg]{skeleton}},
-\code{\link{qdgAlgo}},
+\code{\link{qdg}},
 \code{\link{graph.qdg}},
 \code{\link{generate.qtl.pheno}}
 }
@@ -56,7 +56,7 @@ save(cyclicc.qtl, cyclicc.data, file = "cyclicc.RData", compress = TRUE)
 }
 
 data(cyclicc)
-out <- qdgAlgo(cross=cyclicc.data, 
+out <- qdg(cross=cyclicc.data, 
 		phenotype.names=paste("y",1:6,sep=""),
 		marker.names=cyclicc.qtl$markers, 
 		QTL=cyclicc.qtl$allqtl, 

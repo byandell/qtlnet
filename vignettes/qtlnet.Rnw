@@ -105,13 +105,13 @@ names(allqtls) <- c("y1","y2","y3","y4")
 Infer QDG object.
 
 <<>>=
-out <- qdgAlgo(cross=mycross, 
-		phenotype.names = c("y1","y2","y3","y4"), 
-		marker.names = markers, 
-		QTL = allqtls, 
-		alpha = 0.005, 
-		n.qdg.random.starts=10, 
-		skel.method="pcskel")
+out <- qdg(cross=mycross, 
+           phenotype.names = c("y1","y2","y3","y4"), 
+           marker.names = markers, 
+           QTL = allqtls, 
+           alpha = 0.005, 
+           n.qdg.random.starts=10, 
+           skel.method="pcskel")
 
 out
 @ 

@@ -2,31 +2,31 @@
 \alias{qdg.sem}
 \alias{summary.qdg.sem}
 \alias{print.qdg.sem}
-\title{Score directed graphs outputed by qdgAlgo using structural equation models (SEM)}
+\title{Score directed graphs outputed by qdg using structural equation models (SEM)}
 \description{
-  Score directed graphs (cyclic or acyclic) outputed by qdgAlgo function using the sem R
+  Score directed graphs (cyclic or acyclic) outputed by qdg function using the sem R
   package.     
 }
 \usage{
-qdg.sem(qdgAlgoObject, cross)
+qdg.sem(qdgObject, cross)
 \method{print}{qdg.sem}(x, \dots)
 \method{summary}{qdg.sem}(object, \dots)
 }
 \arguments{
-  \item{qdgAlgoObject}{list containing the output of \code{\link{qdgAlgo}}.}
+  \item{qdgObject}{list containing the output of \code{\link{qdg}}.}
   \item{cross}{object of class \code{cross} (see \code{\link[qtl]{read.cross}}).}
-  \item{x,object}{object of class \code{qdgAlgo}.}
+  \item{x,object}{object of class \code{qdg}.}
   \item{\dots}{extra arguments to print or summary (ignored).}
 }
 \details{
   Fits a SEM to the phenotypes network. QTLs are not included as
-  variables in the model. When additive covariates are used in qdgAlgo, qdg.sem
+  variables in the model. When additive covariates are used in qdg, qdg.sem
   fits a SEM model to the residuals of the variables after adjustment of the 
   additive covariates.
 }
 \value{List object that inherits class "qdg.sem" and "qdg" composed by:
   \item{best.SEM}{Solution with lowest SEM BIC (best fit to the data).}
-  \item{BIC.SEM}{Vector with the BIC values of all solutions from qdgAlgo.}
+  \item{BIC.SEM}{Vector with the BIC values of all solutions from qdg.}
   \item{path.coeffs}{Path coefficients associated with the best SEM solution.}
   \item{Solutions}{Solutions of dependency graph after recheck step
     (output of steps 3, 4 and 5 of the QDG algorithm.)}
@@ -41,7 +41,7 @@ qdg.sem(qdgAlgoObject, cross)
 }
 
 
-\seealso{ \code{\link[sem]{sem}} }
+\seealso{ \code{\link{qdg}} \code{\link[sem]{sem}} }
 
 
 \examples{
@@ -101,7 +101,7 @@ allqtls[[4]] <- makeqtl(mycross, chr = m4.pos[,"chr"], pos = m4.pos[,"pos"])
 names(allqtls) <- c("y1","y2","y3","y4")
 
 ## infer QDG 
-out <- qdgAlgo(cross=mycross, 
+out <- qdg(cross=mycross, 
 		phenotype.names = c("y1","y2","y3","y4"), 
 		marker.names = markers, 
 		QTL = allqtls, 
@@ -111,13 +111,11 @@ out <- qdgAlgo(cross=mycross,
 gr <- graph.qdg(out)
 plot(gr)
 
-\dontrun{
 ## Following does not work. Not sure why.
 out2 <- qdg.sem(out, cross=mycross)
 out2
-gr <- graph.qdg(out2)
-plot(gr)
-}
+gr2 <- graph.qdg(out2)
+plot(gr2)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

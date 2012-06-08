@@ -1,7 +1,7 @@
-\name{qdgAlgo}
-\alias{qdgAlgo}
-\alias{summary.qdgAlgo}
-\alias{print.qdgAlgo}
+\name{qdg}
+\alias{qdg}
+\alias{summary.qdg}
+\alias{print.qdg}
 \alias{graph.qdg}
 \title{ Produces a directed graph using QDG algorithm }
 \description{
@@ -11,19 +11,12 @@
   scores.
 }
 \usage{
-qdgAlgo(cross, 
-        phenotype.names, 
-        marker.names, 
-        QTL, 
-        alpha, 
-        n.qdg.random.starts, 
-        addcov = NULL, 
-        intcov = NULL, 
-        skel.method = "pcskel", 
-        udg.order = 2)
+qdg(cross, phenotype.names, marker.names, QTL, alpha, 
+    n.qdg.random.starts, addcov = NULL, intcov = NULL, 
+    skel.method = c("pcskel","udgskel"), udg.order = 2)
 graph.qdg(x, \dots)
-\method{print}{qdgAlgo}(x, \dots)
-\method{summary}{qdgAlgo}(object, \dots)
+\method{print}{qdg}(x, \dots)
+\method{summary}{qdg}(object, \dots)
 }
 \arguments{
   \item{cross}{ object of class \code{cross} (see \code{\link[qtl]{read.cross}}). }
@@ -42,14 +35,14 @@ graph.qdg(x, \dots)
         \code{cross}. Expanded to include all \code{intcov} names. }
   \item{intcov}{ names of additive covariates. Must be valid phenotype names in 
         \code{cross}. }
-  \item{skel.method}{ Either "pcskel" for the PC skeleton algorithm or "udgskel" for 
-        the UDG algorithm. }
+  \item{skel.method}{ Either "pcskel" for the PC skeleton algorithm
+    (\code{\link[pcalg]{skeleton}}) or "udgskel" for the UDG algorithm
+    (\code{approximate.UDG} routine defined internal to \code{qdg}). }
   \item{udg.order}{ maximum allowed order of the UDG algorithm. Must be between zero 
         and the number of variables minus 2. }
-  \item{x,object}{object of class \code{qdgAlgo}.}
+  \item{x,object}{object of class \code{qdg}.}
   \item{\dots}{additional arguments (ignored).}
 }
-
 \details{
   The log-likelihood and BIC scores are computed based in the factorization of the 
   joint distribution, and hence are only valid for acyclic networks. For cyclic 
@@ -58,9 +51,7 @@ graph.qdg(x, \dots)
   the causal model should be used for small networks only (the UDG algorithm quickly 
   becomes computationally infeasible as the number of nodes increases).
 }
-
-
-\value{List object that inherits class "qdgAlgo" and "qdg" with components:
+\value{List object that inherits class "qdg" and "qdg" with components:
   \item{UDG}{Undirected dependency graph from PC skeleton or UDG algorithms.}
   \item{DG}{Directed dependency graph before recheck step (output of the step 2 of the        QDG algorithm).} 
   \item{best.lm}{Solution with lowest BIC (best fit to the data).}
@@ -132,7 +123,7 @@ allqtls[[4]] <- makeqtl(mycross, chr = m4.pos[,"chr"], pos = m4.pos[,"pos"])
 names(allqtls) <- c("y1","y2","y3","y4")
 
 ## infer QDG 
-out <- qdgAlgo(cross=mycross, 
+out <- qdg(cross=mycross, 
 		phenotype.names = c("y1","y2","y3","y4"), 
 		marker.names = markers, 
 		QTL = allqtls, 

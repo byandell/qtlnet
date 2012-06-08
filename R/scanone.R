@@ -124,9 +124,9 @@ set.dat.form <- function(y, covM.dat=NULL, addcov.dat=NULL, intcov.dat=NULL,
     dat <- cbind.data.frame(dat, geno.dat)
 
   ## Set up formula.
-  form <- myformula(c(names(covM.dat),names(addcov.dat)),
-                    names(intcov.dat),
-                    le.markers)
+  form <- cov.formula(c(names(covM.dat),names(addcov.dat)),
+                      names(intcov.dat),
+                      le.markers)
 
   list(dat = dat, form = form)
 }

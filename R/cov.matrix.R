@@ -1,4 +1,4 @@
-myformula <- function(addcov=NULL, intcov=NULL, nQ)
+cov.formula <- function(addcov=NULL, intcov=NULL, nQ)
 {
   if(!is.null(addcov) & is.null(intcov)){ 
     if(nQ > 0){

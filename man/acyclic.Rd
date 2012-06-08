@@ -20,7 +20,7 @@
   from 0.1 to 0.5. For each realization we apply the QDG algorithm to infer causal 
   directions for the edges of the skeleton 
   obtained by the PC-skeleton algorithm.}
-\details{For cyclic graphs, the output of the qdgAlgo function computes the 
+\details{For cyclic graphs, the output of the qdg function computes the 
 log-likelihood 
 up to the normalization constant (un-normalized log-likelihood). We can 
 use the un-normalized 
@@ -33,7 +33,7 @@ acyclic graphs.
 \code{\link[qtl]{sim.geno}},
 \code{\link[qtl]{sim.map}}, 
 \code{\link[pcalg]{skeleton}},
-\code{\link{qdgAlgo}},
+\code{\link{qdg}},
 \code{\link{graph.qdg}},
 \code{\link{generate.qtl.pheno}}
 }
@@ -72,7 +72,7 @@ bq[,3] <- bq[,2]+0.1
 acyclic.data <- generate.qtl.pheno("acyclic", cross = mycross,
   bp = bp, bq = bq, stdev = stdev, allqtl = acyclic.qtl$allqtl)
 
-acyclic.qdg <- qdgAlgo(cross=acyclic.data, 
+acyclic.qdg <- qdg(cross=acyclic.data, 
 		phenotype.names=paste("y",1:100,sep=""),
 		marker.names=acyclic.qtl$markers, 
 		QTL=acyclic.qtl$allqtl, 

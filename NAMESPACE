@@ -43,7 +43,7 @@ export(summary.qtlnet)
 export(print.summary.qtlnet)
 
 ## QDG routines
-export(qdgAlgo)
+export(qdg)
 export(graph.qdg)
 
 ## Example routines.
