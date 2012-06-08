@@ -1,19 +1,58 @@
-% \VignetteIndexEntry{QDG Overview}
+% \VignetteIndexEntry{QTLNET Overview}
 % \VignetteDepends{qtlnet}
 % \VignetteKeywords{QTL}
 %\VignettePackage{qtlnet}
 \documentclass{article}
 \usepackage[margin=1in,head=0.5in,foot=0.5in]{geometry}
 
-\SweaveOpts{eps=FALSE,prefix.string=qdgPDF/FIG}
+\SweaveOpts{eps=FALSE,prefix.string=qtlnetFIG}
 
 \begin{document}
 
-\title{\textbf{QTL}-directed Dependency Graph (QDG) in R/qtlnet Package}
+\title{Causal Inference for QTL Networks with R/qtlnet Package}
 \author{Elias Chaibub Neto and Brian S. Yandell}
 \maketitle
 
 \SweaveOpts{engine=R,echo=TRUE}
+
+This vignette briefly describes the R/qtlnet package. This contains the legacy R/qdg package, and thus has code for Chaibub Neto et al. (2008) and Chaibub Neto et al. (2010) papers. Not all routines are described here. Further, the package has code for parallel processing using Condor that is not yet documented adequately.
+
+\section{QTLNET routines}
+
+<<>>=
+library(qtlnet)
+@ 
+
+Acyclic example:
+
+<<fig=TRUE>>=
+example(acyclic)
+@
+
+Cyclic A example:
+
+<<fig=TRUE>>=
+example(cyclica)
+@ 
+
+Cyclic B example:
+
+<<fig=TRUE>>=
+example(cyclicb)
+@ 
+
+Cyclic C example:
+
+<<fig=TRUE>>=
+example(cyclicc)
+@ 
+
+GLX network example (from Chaibub Neto et al. (2008)):
+
+<<fig=TRUE>>=
+example(glxnet)
+@ 
+\section{QDG routines}
 
 The QDG routines are now incorporated into R/qtlnet.
 This document shows how to generate data, fit a QDG model and plot the inferred graph. We focus on a simple graph, y1 -> y3, y2 -> y3 and y3 -> y4, with QTLs that affect each of the three phenotypes.

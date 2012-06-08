@@ -1,4 +1,5 @@
 \name{glxnet}
+\alias{glxnet}
 \alias{glxnet.cross}
 \alias{glxnet.qtl}
 \alias{glxnet.qdg}
