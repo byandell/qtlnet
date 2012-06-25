@@ -78,9 +78,9 @@ igraph.qtlnet <- function(x,
                          color = vertex.color, fill = vertex.color)
 
   ## Great graph object (library igraph).
-  igraph.par("print.graph.attributes", TRUE)
-  igraph.par("print.vertex.attributes", TRUE)
-  igraph.par("print.edge.attributes", TRUE)
+  igraph.options(print.graph.attributes = TRUE,
+                 print.vertex.attributes = TRUE,
+                 print.edge.attributes = TRUE)
   graph.data.frame(edges, TRUE, vertices = vertices)
 }
 ##################################################################
