@@ -34,6 +34,7 @@ scan.genome <- function(cross, pheno.col, pheno.parents, addcov, intcov,
   ss <- scanone.summary(cross, pheno.col, addcovM.dat, intcovM.dat, threshold, method)
   
   bic <- rep(NA, n.pheno)
+  cross.type <- class(cross)[1]
   if(nrow(ss)) {
     ## Model may be different for each trait, depending on QTL.
     ## For loop is clumsy, but calculations are pretty fast.
@@ -49,19 +50,20 @@ scan.genome <- function(cross, pheno.col, pheno.parents, addcov, intcov,
         ## Need to extend this to multiple phenotypes.
         qtlo <- makeqtl(cross, chr = ss[signif.lods, 1],
                         pos = ss[signif.lods, 2 * i], what="prob")
-        geno.dat <- hk.design.matrix(qtlo=qtlo)[,-1]
+        geno.dat <- hk.design.matrix(qtlo=qtlo, cross.type)[,-1, drop = FALSE]
         
         tmp <- paste("add", 1:le.markers, sep = "")
-        if(inherits(cross, "f2"))
+        if(cross.type == "f2")
           tmp <- as.vector(rbind(tmp, paste("dom", 1:le.markers, sep = "")))
-        dimnames(geno.dat)[[2]] <- tmp
+        dimnames(geno.dat) <- list(NULL, tmp)
         
-        form <- set.dat.form(y, covM.dat, addcov.dat, intcov.dat, geno.dat, le.markers)
+        form <- set.dat.form(y, covM.dat, addcov.dat, intcov.dat, geno.dat, le.markers,
+                             cross.type)
         dat <- form$dat
         form <- form$form
       }
       else{
-        form <- set.dat.form(y, covM.dat, addcov.dat, intcov.dat)
+        form <- set.dat.form(y, covM.dat, addcov.dat, intcov.dat, cross.type)
         dat <- form$dat
         form <- form$form
       }
@@ -80,7 +82,7 @@ scan.genome <- function(cross, pheno.col, pheno.parents, addcov, intcov,
         y <- cross$pheno[, pheno.col[1]]
 
         ## Need only do this once if no QTL.
-        form <- set.dat.form(y, covM.dat, addcov.dat, intcov.dat)
+        form <- set.dat.form(y, covM.dat, addcov.dat, intcov.dat, cross.type)
         dat <- form$dat
         form <- form$form
         
@@ -110,7 +112,7 @@ scanone.summary <- function(cross, pheno.col, addcov, intcov, threshold,
 }
 ###########################################################################################
 set.dat.form <- function(y, covM.dat=NULL, addcov.dat=NULL, intcov.dat=NULL,
-                         geno.dat=NULL, le.markers = 0)
+                         geno.dat=NULL, le.markers = 0, cross.type = "f2")
 {
   ## Set up data.frame
   dat <- data.frame(y = y)
@@ -126,7 +128,7 @@ set.dat.form <- function(y, covM.dat=NULL, addcov.dat=NULL, intcov.dat=NULL,
   ## Set up formula.
   form <- cov.formula(c(names(covM.dat),names(addcov.dat)),
                       names(intcov.dat),
-                      le.markers)
+                      le.markers, cross.type)
 
   list(dat = dat, form = form)
 }

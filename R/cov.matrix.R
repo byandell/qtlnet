@@ -1,8 +1,12 @@
-cov.formula <- function(addcov=NULL, intcov=NULL, nQ)
+cov.formula <- function(addcov=NULL, intcov=NULL, nQ, cross.type = "f2")
 {
+  if(nQ > 0){
+    Qnames <- paste("add",1:nQ,sep="")
+    if(cross.type == "f2")
+      Qnames <- as.vector(rbind(Qnames, paste("dom",1:nQ,sep="")))
+  }
   if(!is.null(addcov) & is.null(intcov)){ 
     if(nQ > 0){
-      Qnames <- as.vector(rbind(paste("add",1:nQ,sep=""),paste("dom",1:nQ,sep="")))
       myform <- as.formula(paste("y ~ ", paste(c(addcov,Qnames), collapse = "+")))
     }
     else{
@@ -13,7 +17,6 @@ cov.formula <- function(addcov=NULL, intcov=NULL, nQ)
     le <- length(intcov)	
     intaddcov <- unique(c(intcov,addcov))
     if(nQ > 0){
-      Qnames <- as.vector(rbind(paste("add",1:nQ,sep=""),paste("dom",1:nQ,sep="")))
       intQnames <- c()
       for(i in 1:le){
         intQnames <- c(intQnames,paste(intaddcov[i], Qnames, sep=":"))
@@ -26,7 +29,6 @@ cov.formula <- function(addcov=NULL, intcov=NULL, nQ)
   }
   if(is.null(addcov) & is.null(intcov)){
     if(nQ > 0){
-      Qnames <- as.vector(rbind(paste("add",1:nQ,sep=""),paste("dom",1:nQ,sep="")))
       myform <- as.formula(paste("y ~ ", paste(Qnames, collapse = "+")))
     }
     else{
