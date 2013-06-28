@@ -24,8 +24,6 @@
 
 plot.qtlnet <- function(x, ...)
 {
-  require(igraph)
-  
   gr <- igraph.qtlnet(x, ...)
   tkplot(gr, ...)
   
@@ -43,8 +41,6 @@ igraph.qtlnet <- function(x,
                          include.qtl=TRUE,
                          ...)
 {
-  require(igraph)
-  
   node.names <- levels(edges[[1]])
   if(is.null(node.names))
     node.names <- unique(c(as.character(edges[[1]]), as.character(edges[[2]])))

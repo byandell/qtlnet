@@ -100,8 +100,10 @@ g41 <- genotypes[,m4[1]]; g42 <- genotypes[,m4[2]]
 ## generate phenotypes
 y1 <- runif(3,0.5,1)[g11] + runif(3,0.5,1)[g12] + rnorm(n.ind)
 y2 <- runif(3,0.5,1)[g21] + runif(3,0.5,1)[g22] + rnorm(n.ind)
-y3 <- runif(1,0.5,1) * y1 +  runif(1,0.5,1) * y2 + runif(3,0.5,1)[g31] + runif(3,0.5,1)[g32] + rnorm(n.ind)
-y4 <- runif(1,0.5,1) * y3 + runif(3,0.5,1)[g41] + runif(3,0.5,1)[g42] + rnorm(n.ind)
+y3 <- runif(1,0.5,1) * y1 +  runif(1,0.5,1) * y2 + runif(3,0.5,1)[g31] +
+      runif(3,0.5,1)[g32] + rnorm(n.ind)
+y4 <- runif(1,0.5,1) * y3 + runif(3,0.5,1)[g41] + runif(3,0.5,1)[g42] +
+      rnorm(n.ind)
 
 ## incorporate phenotypes to cross object
 mycross$pheno <- data.frame(y1,y2,y3,y4)

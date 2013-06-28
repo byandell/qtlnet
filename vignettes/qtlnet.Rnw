@@ -17,6 +17,28 @@
 
 This vignette briefly describes the R/qtlnet package. This contains the legacy R/qdg package, and thus has code for Chaibub Neto et al. (2008) and Chaibub Neto et al. (2010) papers. Not all routines are described here. Further, the package has code for parallel processing using Condor that is not yet documented adequately.
 
+R/qtlnet depends on R/pcalg, which in turn depends on RBGL from bioconductor. To ease your pain in installing, you can install as follows from within R:
+
+\begin{Schunk}
+\begin{Sinput}
+> source("http://bioconductor.org/biocLite.R") 
+> biocLite("RBGL")
+> install.packages("qtlnet")
+\end{Sinput}
+\end{Schunk}
+
+This should work on any platform. It is possible to set up R so that it always checks Bioconductor or other repositories, using pull-down menu (Windows) or \texttt{.Rprofile} (see text below). See R package documentation for more information.
+\begin{Schunk}
+\begin{Sinput}
+## .Rprofile using multiple repositories.
+repos <- structure(c(CRAN="http://streaming.stat.iastate.edu/CRAN",
+                     CRANextra="http://www.stats.ox.ac.uk/pub/RWin",
+                     BioCsoft="http://www.bioconductor.org/packages/release/bioc",
+                     Rforge="http://r-forge.r-project.org"))
+options(repos=repos)
+\end{Sinput}
+\end{Schunk}
+
 \section{QTLNET routines}
 
 <<>>=

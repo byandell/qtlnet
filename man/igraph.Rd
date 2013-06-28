@@ -46,7 +46,8 @@ to a variety of other modern graphics packages. \code{graph.qtlnet} is
 synonymous with \code{igraph.qtlnet}.
 }
 \value{
-  Object of class \code{\link[igraph]{igraph}}.
+  Object of class \code{graph} created using
+  \code{\link[igraph]{graph.data.frame}}.
 }
 \author{
 Brian S. Yandell and Elias Chaibub Neto
