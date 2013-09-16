@@ -22,9 +22,9 @@
 dist.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex = 5)
 {
   ## Fold to unique edges; threshold on min.prob.
-  M <- apply(qtlnet.object$Mav, 3, function(x) 1 * (qtlnet:::fold.M(x) >= min.prob))
+  M <- apply(qtlnet.object$Mav, 3, function(x) 1 * (fold.M(x) >= min.prob))
   
-  mbic <- qtlnet:::meanbic(qtlnet.object)
+  mbic <- meanbic(qtlnet.object)
   wh <- which.min(mbic)
   
   out <- list(sum = apply(M, 2, sum),
