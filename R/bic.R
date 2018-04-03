@@ -11,7 +11,7 @@ bic.qtlnet <- function(cross, pheno.col, threshold,
   ## Calculate genotype probabilities if not already done.
   if (!("prob" %in% names(cross$geno[[1]]))) {
     warning("First running calc.genoprob.")
-    cross <- calc.genoprob(cross)
+    cross <- qtl::calc.genoprob(cross)
   }
 
   ## Adjust phenotypes and covariates to be numeric.
@@ -138,7 +138,7 @@ parents.qtlnet <- function(pheno.col, max.parents = 3, codes.only = FALSE)
     names(parents) <- ""
   }
   for(i in seq(1, max.parents)) {
-    combs <- combn(n.pheno, i)
+    combs <- utils::combn(n.pheno, i)
     name.combs <- as.character(apply(combs, 2,
                                      function(x,y) find.code(y,x), n.pheno + 1))
     if(codes.only)
@@ -232,7 +232,7 @@ match.parents <- function(cross, code, i, parents, addcov, intcov,
   ## Find which individuals have missing phenotype for i, parents, covariates.
   ## na.pheno should not be all TRUE.
   na.pheno <- is.na(cross$pheno[[i]])
-  na.covar <- rep(FALSE, nind(cross))
+  na.covar <- rep(FALSE, qtl::nind(cross))
   if(length(parents))
     na.covar <- {na.covar |
                  apply(cross$pheno[, parents, drop = FALSE], 1,
@@ -310,16 +310,16 @@ adjust.pheno <- function(cross, pheno.col, addcov, intcov)
                               namex="intcov",len=length(pheno.col))
   cross$pheno <-
     cross$pheno[, unique(c(pheno.names, unlist(addcov.names), unlist(intcov.names)))]
-  pheno.col <- find.pheno(cross, pheno.names)
+  pheno.col <- qtl::find.pheno(cross, pheno.names)
   if(!is.null(addcov)) {
     addcov <- list()
     for(i in seq(length(addcov.names)))
-        addcov[[i]] <- find.pheno(cross, addcov.names[[i]])
+        addcov[[i]] <- qtl::find.pheno(cross, addcov.names[[i]])
   }
   if(!is.null(intcov)) {
     intcov <- list()
     for(i in seq(length(intcov.names)))
-        intcov[[i]] <- find.pheno(cross, intcov.names[[i]])
+        intcov[[i]] <- qtl::find.pheno(cross, intcov.names[[i]])
   }
 
   list(cross = cross, pheno.col = pheno.col, pheno.names = pheno.names,

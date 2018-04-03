@@ -28,7 +28,7 @@ parallel.error <- function(num, phase = 0, index = 1)
     outname <- "RESULT"
   else
     outname <- paste("RESULT", phase, index, sep = ".")
-  write.table(num, file = outname,
+  utils::write.table(num, file = outname,
               quote = FALSE, row.names = FALSE, col.names = FALSE)
   if(num)
     stop(parallel.message(num))
@@ -51,7 +51,7 @@ parallel.message <- function(num)
                      "number of BIC runs does not match groups"))
   dimnames(msg)[[1]] <- seq(0, nrow(msg) - 1)
   if(missing(num))
-    write.table(msg, file = "errorcodes.txt",
+    utils::write.table(msg, file = "errorcodes.txt",
               quote = FALSE, col.names = FALSE)
   else
     msg[as.character(num), 1]
@@ -98,7 +98,7 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
 
   ## Calculate genotype probabilities if not already done.
   if (!("prob" %in% names(cross$geno[[1]])))
-    cross <- calc.genoprob(cross, step = step)
+    cross <- qtl::calc.genoprob(cross, step = step)
   
   ## Break up into groups to run on several machines.
   ## 54 groups of ~1000, for a total of 53248 scanone runs.
@@ -113,7 +113,7 @@ qtlnet.phase1 <- function(dirpath, index = NULL,
        compress = TRUE)
   
   ## Need to write a file with n.groups lines and group.size columns.
-  write.table(groups,
+  utils::write.table(groups,
               file = file.path(dirpath, "groups.txt"),
               row.names = FALSE, col.names = FALSE, quote = FALSE)
 }

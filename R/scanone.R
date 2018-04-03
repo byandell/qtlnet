@@ -12,7 +12,7 @@ scan.genome <- function(cross, pheno.col, pheno.parents, addcov, intcov,
   ## *** However, it involves a rethinking of myformula.
   ## *** Low priority for now.
   
-  ## Design matrices for qtl/scanone. Must be numeric entries.
+  ## Design matrices for qtl::scanone. Must be numeric entries.
   ## Design matrix for parent phenotypes
   covM.dat <- pull.pheno.null(cross, pheno.parents)
   ## Design matrix for additive covariates.
@@ -48,7 +48,7 @@ scan.genome <- function(cross, pheno.col, pheno.parents, addcov, intcov,
       ## Build data.frame and formula for linear model fit.
       if(le.markers > 0){
         ## Need to extend this to multiple phenotypes.
-        qtlo <- makeqtl(cross, chr = ss[signif.lods, 1],
+        qtlo <- qtl::makeqtl(cross, chr = ss[signif.lods, 1],
                         pos = ss[signif.lods, 2 * i], what="prob")
         geno.dat <- hk.design.matrix(qtlo=qtlo, cross.type)[,-1, drop = FALSE]
         
@@ -69,10 +69,10 @@ scan.genome <- function(cross, pheno.col, pheno.parents, addcov, intcov,
       }
       
       ## Fit linear model.
-      fm <- lm(form, dat)
+      fm <- stats::lm(form, dat)
 
       ## Record BIC.
-      bic[i] <- AIC(fm, k = log(length(y)))[1]
+      bic[i] <- stats::AIC(fm, k = log(length(y)))[1]
     }
   }
   else {
@@ -87,13 +87,13 @@ scan.genome <- function(cross, pheno.col, pheno.parents, addcov, intcov,
         form <- form$form
         
         ## Fit linear model.
-        fm <- lm(form, dat)
+        fm <- stats::lm(form, dat)
       }
       else
         dat$y <- cross$pheno[, pheno.col[i]]
         
       ## Record BIC.
-      bic[i] <- AIC(update(fm, data = dat), k = log(length(y)))[1]
+      bic[i] <- stats::AIC(stats::update(fm, data = dat), k = log(length(y)))[1]
     }
   }
   bic
@@ -103,7 +103,7 @@ scanone.summary <- function(cross, pheno.col, addcov, intcov, threshold,
                             method)
 {
   ## This is the big time commitment.
-  scan <- scanone(cross, pheno.col = pheno.col,
+  scan <- qtl::scanone(cross, pheno.col = pheno.col,
                   addcovar = addcov, intcovar = intcov, method = method)
   
   ## Mainly intersted in this summary to determine QTLs.

@@ -5,18 +5,30 @@
 # zzz.r.
 #
 
-# useDynLib(qtlnet)
-
 ############################################################################
 # Export directives.  These directives export functions.  S3 methods for
 # classes declared in the package should be declared with the "S3method"
 # directive.
 #
 
+importFrom(graph, edges)
+importFrom(igraph, get.edge.attribute, get.edgelist, graph.data.frame,
+           igraph.options, list.edge.attributes, tkplot)
+importFrom(pcalg, gaussCItest, skeleton)
+importFrom(qtl, argmax.geno, calc.genoprob, create.map, find.marker,
+           find.pheno, fitqtl, makeqtl, nind, scanone, qtlversion)
+importFrom(sem, sem)
+importFrom(graphics, abline, lines, plot, points, text, title)
+importFrom(stats, AIC, as.formula, cmdscale, coef, cor, cov, dist, formula,
+           lm, logLik, lowess, model.matrix, pchisq, pt, rnorm, runif, weighted.mean)
+importFrom(utils, combn, compareVersion, write.table)
+
+S3method(c, qtlnet)
+S3method(subset, qtlnet)
+
 export(best.qtlnet)
 export(bic.join)
 export(bic.qtlnet)
-export(c.qtlnet)
 export(check.qtlnet)
 export(dist.qtlnet)
 export(edgematch.qtlnet)

@@ -44,7 +44,7 @@ write.qtlnet <- function(x,
     out$coef <- tmp
   }
   
-  write.table(out, file = filename, quote = FALSE,
+  utils::write.table(out, file = filename, quote = FALSE,
               col.names = col.names, row.names = FALSE)
   invisible(out)
 }

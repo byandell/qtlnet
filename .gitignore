@@ -1,3 +1,6 @@
 *~
 *.[oa]
 *.log
+.Rproj.user
+.Rhistory
+*.Rproj

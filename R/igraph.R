@@ -25,7 +25,7 @@
 plot.qtlnet <- function(x, ...)
 {
   gr <- igraph.qtlnet(x, ...)
-  tkplot(gr, ...)
+  igraph::tkplot(gr, ...)
   
   invisible(gr)
 }
@@ -74,30 +74,30 @@ igraph.qtlnet <- function(x,
                          color = vertex.color, fill = vertex.color)
 
   ## Great graph object (library igraph).
-  igraph.options(print.graph.attributes = TRUE,
+  igraph::igraph.options(print.graph.attributes = TRUE,
                  print.vertex.attributes = TRUE,
                  print.edge.attributes = TRUE)
-  graph.data.frame(edges, TRUE, vertices = vertices)
+  igraph::graph.data.frame(edges, TRUE, vertices = vertices)
 }
 ##################################################################
 ## Following routines are highly dependent on how igraph objects are structured.
 ##################################################################
 get.graph.vertices <- function(graph)
 {
-  attr <- list.vertex.attributes(graph)
+  attr <- igraph::list.vertex.attributes(graph)
   out <- list()
   for(i in attr)
-    out[[i]] <- get.vertex.attribute(graph, i)
+    out[[i]] <- igraph::get.vertex.attribute(graph, i)
   data.frame(out)
 }
 ############################################################
 get.graph.edges <- function(graph)
 {
-  attr <- list.edge.attributes(graph)
-  out <- as.data.frame(get.edgelist(graph))
+  attr <- igraph::list.edge.attributes(graph)
+  out <- as.data.frame(igraph::get.edgelist(graph))
   names(out) <- c("cause","effect")
   for(i in attr)
-    out[[i]] <- get.edge.attribute(graph, i)
+    out[[i]] <- igraph::get.edge.attribute(graph, i)
   out
 }
 
@@ -133,7 +133,7 @@ igraph.qdg <- function(x,
   }
   loci <- x$phenotype.names
   myedges <- data.frame(cause = factor(node1, loci), effect = factor(node2, loci),
-                      prob = pchisq(log(10) * pheno.output$lod, 1))
+                      prob = stats::pchisq(log(10) * pheno.output$lod, 1))
   myloci.list <- x$marker.names
 
   igraph.qtlnet(x, edges, loci.list, ...)

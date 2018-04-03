@@ -11,15 +11,15 @@ qdg.sem <- function(qdgObject, cross)
     path.coeffs <- matrix(NA,n.paths,n.sol)
     if(!is.null(addcov)){
       addcov <- paste("cross$pheno$",addcov,sep="")
-      myresid <- matrix(0,nind(cross),np)
+      myresid <- matrix(0, qtl::nind(cross),np)
       for(i in 1:np){
-        fm <- lm(as.formula(paste("mypheno[,i] ~ ", paste(addcov, collapse = "+"))))
+        fm <- stats::lm(stats::as.formula(paste("mypheno[,i] ~ ", paste(addcov, collapse = "+"))))
         myresid[,i] <- fm$resid
       }
-      mycov <- cov(myresid)
+      mycov <- stats::cov(myresid)
       for(i in 1:n.sol){
         ramMatrix <- create.sem.model(DG=all.solutions[[1]][[i]],pheno.names=pheno.names)
-        mysem <- try(sem(ramMatrix, S = mycov, N = nind(cross), var.names = pheno.names,
+        mysem <- try(sem::sem(ramMatrix, S = mycov, N = qtl::nind(cross), var.names = pheno.names,
                          steptol = steptol, analytic.gradient = FALSE,
                          param.names = paste("Param", seq(nrow(ramMatrix)), sep = "")), silent = TRUE)
         if(class(mysem)[1] != "try-error"){
@@ -32,10 +32,10 @@ qdg.sem <- function(qdgObject, cross)
       }
     }
     else {
-      mycov <- cov(mypheno)
+      mycov <- stats::cov(mypheno)
       for(i in 1:n.sol){
         ramMatrix <- create.sem.model(DG=all.solutions[[1]][[i]],pheno.names=pheno.names)	
-        mysem <- try(sem(ramMatrix, S = mycov, N = nind(cross), var.names = pheno.names,
+        mysem <- try(sem::sem(ramMatrix, S = mycov, N = qtl::nind(cross), var.names = pheno.names,
                          steptol = steptol, analytic.gradient = FALSE,
                          param.names = paste("Param", seq(nrow(ramMatrix)), sep = "")), silent = TRUE)
         if(class(mysem)[1] != "try-error"){

@@ -45,8 +45,8 @@ generate.qtl.markers <- function(cross, n.phe, nqtl = 3)
                     cross$geno[[chrm[2]]]$map[position[2]],
                     cross$geno[[chrm[3]]]$map[position[3]])	
     }
-    allqtls[[i]] <- makeqtl(cross, chr = chrm, pos = position)
-    markers[[i]] <- find.marker(cross, chr = chrm, pos = position)
+    allqtls[[i]] <- qtl::makeqtl(cross, chr = chrm, pos = position)
+    markers[[i]] <- qtl::find.marker(cross, chr = chrm, pos = position)
   }
   names(allqtls) <- paste("y", 1:n.phe, sep = "")
   names(markers) <- paste("y", 1:n.phe, sep = "")
@@ -73,7 +73,7 @@ geno.effect <- function(nodes, bq, bp, stdev, allqtl, n, y)
 {
   i <- nodes[1]
   out <- bq[i, allqtl[[i]]$geno[,1,]] + bq[i, allqtl[[i]]$geno[,2,]] +
-    bq[i, allqtl[[i]]$geno[,3,]] + rnorm(n, 0, stdev[i])
+    bq[i, allqtl[[i]]$geno[,3,]] + stats::rnorm(n, 0, stdev[i])
   len <- length(nodes)
   if(len > 1) {
     for(j in seq(2, len))
@@ -365,27 +365,27 @@ generate.data.graph.a <- function(cross,burnin,bq,bp,stdev,geno)
     for(i in 2:(n + burnin)){
       m1 <- (stdev[2] * mu[1] +
              stdev[1] * bp[2,1] * (y2[i-1] - mu[2] - bp[2,5] * y5[i-1])) / aux1
-      y1[i] <- rnorm(1,m1,sqrt(phi1))
+      y1[i] <- stats::rnorm(1,m1,sqrt(phi1))
 
       m2 <- (stdev[4] * (mu[2] + bp[2,1] * y1[i] + bp[2,5] * y5[i-1]) +
              stdev[2] * bp[4,2] * (y4[i-1] - mu[4] - bp[4,3] * y3[i-1])) / aux2
-      y2[i] <- rnorm(1,m2,sqrt(phi2))
+      y2[i] <- stats::rnorm(1,m2,sqrt(phi2))
 
       m3 <- (stdev[4] * mu[3] +
              stdev[3] * bp[4,2] * (y4[i-1] - mu[4] - bp[4,2] * y2[i])) / aux3
-      y3[i] <- rnorm(1,m3,sqrt(phi3))
+      y3[i] <- stats::rnorm(1,m3,sqrt(phi3))
 
       m4 <- (stdev[5] * (mu[4] + bp[4,2] * y2[i] + bp[4,3] * y3[i]) +
              stdev[4] * bp[5,4] * (y5[i-1] - mu[5])) / aux4
-      y4[i] <- rnorm(1,m4,sqrt(phi4))
+      y4[i] <- stats::rnorm(1,m4,sqrt(phi4))
 
       m5 <- (stdev[2] * stdev[6] * (mu[5] + bp[5,4] * y4[i]) +
              bp[2,5] * stdev[5] * stdev[6] * (y2[i] - mu[2] - bp[2,1] * mu[1]) +
              bp[6,5] * stdev[2] * stdev[5] * (y6[i-1] - mu[6])) / aux5
-      y5[i] <- rnorm(1,m5,sqrt(phi5))
+      y5[i] <- stats::rnorm(1,m5,sqrt(phi5))
 
       m6 <- mu[6]+bp[6,5]*y5[i]
-      y6[i] <- rnorm(1,m6,sqrt(phi6))
+      y6[i] <- stats::rnorm(1,m6,sqrt(phi6))
     }	
     y <- cbind(y1,y2,y3,y4,y5,y6)
     return(y[-c(1:burnin),])
@@ -424,22 +424,22 @@ generate.data.graph.b <- function(cross,burnin,bq,bp,stdev,geno)
     y1 <- y2 <- y3 <- y4 <- y5 <- y6 <- rep(0,n+burnin)
     for(i in 2:(n+burnin)){
       m1 <- (stdev[2]*stdev[3]*(mu[1]+bp[1,5]*y5[i-1])+stdev[1]*stdev[3]*bp[2,1]*(y2[i-1]-mu[2])+stdev[1]*stdev[2]*bp[3,1]*(y3[i-1]-mu[3]))/aux1
-      y1[i] <- rnorm(1,m1, sqrt(phi1))
+      y1[i] <- stats::rnorm(1,m1, sqrt(phi1))
 
       m2 <- (stdev[4]*(mu[2]+bp[2,1]*y1[i])+stdev[2]*bp[4,2]*(y4[i-1]-mu[4]))/aux2
-      y2[i] <- rnorm(1, m2, sqrt(phi2))
+      y2[i] <- stats::rnorm(1, m2, sqrt(phi2))
 
       m3 <- (stdev[6]*(mu[3]+bp[3,1]*y1[i])+stdev[3]*bp[6,3]*(y6[i-1]-mu[6]))/aux3
-      y3[i] <- rnorm(1, m3, sqrt(phi3))
+      y3[i] <- stats::rnorm(1, m3, sqrt(phi3))
 
       m4 <- (stdev[5]*(mu[4]+bp[4,2]*y2[i])+stdev[4]*bp[5,4]*(y5[i-1]-mu[5]-bp[5,6]*y6[i-1]))/aux4
-      y4[i] <- rnorm(1, m4, sqrt(phi4))
+      y4[i] <- stats::rnorm(1, m4, sqrt(phi4))
 
       m5 <- (stdev[1]*(mu[5]+bp[5,4]*y4[i]+bp[5,6]*y6[i-1])+stdev[5]*bp[1,5]*(y1[i]-mu[1]))/aux5
-      y5[i] <- rnorm(1, m5, sqrt(phi5))
+      y5[i] <- stats::rnorm(1, m5, sqrt(phi5))
 
       m6 <- (stdev[5]*(mu[6]+bp[6,3]*y3[i])+stdev[6]*bp[5,6]*(y5[i]-mu[5]-bp[5,4]*y4[i]))/aux6
-      y6[i] <- rnorm(1, m6, sqrt(phi6))
+      y6[i] <- stats::rnorm(1, m6, sqrt(phi6))
     }	
     y <- cbind(y1,y2,y3,y4,y5,y6)
     return(y[-c(1:burnin),])
@@ -476,22 +476,22 @@ generate.data.graph.c <- function(cross,burnin,bq,bp,stdev,geno)
     y1 <- y2 <- y3 <- y4 <- y5 <- y6 <- rep(0,n+burnin)
     for(i in 2:(n+burnin)){
       m1 <- (stdev[2]*mu[1]+stdev[1]*bp[2,1]*(y2[i-1]-mu[2]-bp[2,5]*y5[i-1]))/aux1
-      y1[i] <- rnorm(1, m1, sqrt(phi1))
+      y1[i] <- stats::rnorm(1, m1, sqrt(phi1))
       
       m2 <- (stdev[3]*stdev[5]*(mu[2]+bp[2,1]*y1[i]+bp[2,5]*y5[i-1])+stdev[2]*stdev[5]*bp[3,2]*(y3[i-1]-mu[3])+stdev[2]*stdev[3]*bp[5,2]*(y5[i-1]-mu[5]-bp[5,4]*y4[i-1]))/aux2
-      y2[i] <- rnorm(1, m2, sqrt(phi2))
+      y2[i] <- stats::rnorm(1, m2, sqrt(phi2))
 
       m3 <- mu[3]+bp[3,2]*y2[i]
-      y3[i] <- rnorm(1, m3, sqrt(phi3))
+      y3[i] <- stats::rnorm(1, m3, sqrt(phi3))
 
       m4 <- (stdev[5]*mu[4]+stdev[4]*bp[5,4]*(y5[i-1]-mu[5]-bp[5,2]*y2[i]))/aux4
-      y4[i] <- rnorm(1, m4, sqrt(phi4))
+      y4[i] <- stats::rnorm(1, m4, sqrt(phi4))
 
       m5 <- (stdev[2]*stdev[6]*(mu[5]+bp[5,4]*y4[i]+bp[5,2]*y2[i])+stdev[5]*stdev[6]*bp[2,5]*(y2[i]-mu[2]-bp[2,1]*y1[i])+stdev[2]*stdev[5]*bp[6,5]*(y6[i-1]-mu[6]))/aux5
-      y5[i] <- rnorm(1, m5, sqrt(phi5))
+      y5[i] <- stats::rnorm(1, m5, sqrt(phi5))
 
       m6 <- mu[6]+bp[6,5]*y5[i]
-      y6[i] <- rnorm(1, m6, sqrt(phi6))
+      y6[i] <- stats::rnorm(1, m6, sqrt(phi6))
     }	
     y <- cbind(y1,y2,y3,y4,y5,y6)
     return(y[-c(1:burnin),])

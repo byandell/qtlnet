@@ -8,18 +8,18 @@ lod.score <- function(cross, node1, node2, qtl.node1, qtl.node2, cov.node1=NULL,
   if(nQ1 > 0 & nQ2 == 0) qtl.node2 <- qtl.node1
   if(nQ1 == 0 & nQ2 == 0) qtl.node1 <- qtl.node2 <- artfact.qtl
   
-  old.fitqtl <- compareVersion(qtlversion(), "1.08-43") < 0
+  old.fitqtl <- utils::compareVersion(qtl::qtlversion(), "1.08-43") < 0
   if(old.fitqtl)
     myfitqtl <- function(cross, pheno.col, ...)
-      fitqtl(cross$pheno[[pheno.col]], ...)
+      qtl::fitqtl(cross$pheno[[pheno.col]], ...)
   else
     myfitqtl <- function(cross, pheno.col, ...)
-      fitqtl(cross, pheno.col, ...)
+      qtl::fitqtl(cross, pheno.col, ...)
   
-  node1.col <- find.pheno(cross, pheno=node1)
+  node1.col <- qtl::find.pheno(cross, pheno=node1)
   node1 <- data.frame(node1 = cross$pheno[,node1.col])
 
-  node2.col <- find.pheno(cross, pheno=node2)
+  node2.col <- qtl::find.pheno(cross, pheno=node2)
   node2 <- data.frame(node2 = cross$pheno[,node2.col])
   
   if(is.null(cov.node1)) {

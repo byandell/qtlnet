@@ -8,6 +8,7 @@
 \SweaveOpts{eps=FALSE,prefix.string=qtlnetFIG}
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 
 \title{Causal Inference for QTL Networks with R/qtlnet Package}
 \author{Elias Chaibub Neto and Brian S. Yandell}

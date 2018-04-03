@@ -36,8 +36,8 @@ qdg <- function(cross, phenotype.names, marker.names, QTL, alpha,
   skel.method <- match.arg(skel.method)
   if(skel.method == "pcskel"){
     ## Create skeleton using R/pcalg package.
-    suffStat <- list(C = cor(pheno.data), n = nrow(pheno.data))
-    pcskeleton <- skeleton(suffStat, gaussCItest, ncol(pheno.data), alpha)
+    suffStat <- list(C = stats::cor(pheno.data), n = nrow(pheno.data))
+    pcskeleton <- pcalg::skeleton(suffStat, pcalg::gaussCItest, alpha, p = ncol(pheno.data))
 
     ## Transform to UDG.
     UDG <- transformPCtoUDG(pcskeleton)
@@ -48,7 +48,7 @@ qdg <- function(cross, phenotype.names, marker.names, QTL, alpha,
 
   DG <- orient.graph.edges(cross=cross,UDG=UDG,QTLs=QTL,addcov=addcov,intcov=intcov)
   rc <- recheck.directions(cross=cross,QTLs=QTL,oldDG=DG,addcov=addcov,intcov=intcov)
-  aux.cross <- argmax.geno(cross)
+  aux.cross <- qtl::argmax.geno(cross)
   genotypes <- pull.geno.argmax(aux.cross)
   as <- get.all.solutions(DG=DG, rc=rc, n.shuffles=n.qdg.random.starts, cross=cross,
                           QTLs=QTL, markers=marker.names, phenotypes=phenotype.names,
@@ -124,12 +124,12 @@ approximate.UDG <- function(Data, alpha, fixed.order = 2)
   }
   pvalue <- function(correlation, n, np){
     tobs <- correlation/sqrt((1-correlation^2)/(n-2-np))
-    return(2*pt(abs(tobs), df = n-2-np, lower.tail = FALSE))	
+    return(2 * stats::pt(abs(tobs), df = n-2-np, lower.tail = FALSE))	
   }
   n <- length(Data[, 1])
   nv <- length(Data[1, ])
   aux.comb <- c(1:nv)
-  R <- cor(Data, method = "spearman")
+  R <- stats::cor(Data, method = "spearman")
   UDG <- data.frame(matrix(1, nv*(nv-1)/2, 3))
   names(UDG) <- c("node1", "node2", "edge")
   cp <- 1
@@ -146,7 +146,7 @@ approximate.UDG <- function(Data, alpha, fixed.order = 2)
         else end <- 1
         order <- 1
         while((order <= fixed.order) & (end == 0)){
-          comb <- combn(x = aux.comb[-c(i, j)], m = order)
+          comb <- utils::combn(x = aux.comb[-c(i, j)], m = order)
           nc <- length(comb[1, ])
           k <- 1
           while((k <= nc) & (end == 0)){

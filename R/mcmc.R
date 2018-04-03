@@ -53,7 +53,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   ## Calculate genotype probabilities if not already done.
   if (!("prob" %in% names(cross$geno[[1]]))) {
     warning("First running calc.genoprob.")
-    cross <- calc.genoprob(cross)
+    cross <- qtl::calc.genoprob(cross)
   }
 
   Mav <- matrix(0, n.pheno, n.pheno)
@@ -87,7 +87,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
   if(verbose) {
     cat("\n")
     if(verbose > 2)
-      plot(c(1,nSamples), bic.old * c(0.5,1.2), type = "n",
+      graphics::plot(c(1,nSamples), bic.old * c(0.5,1.2), type = "n",
            xlab = "sample", ylab = "BIC")
   }
   
@@ -97,7 +97,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
     post.model[1] <- model.old
     k <- 1
     if(verbose > 2)
-      points(k, post.bic[k], cex = 0.5)
+      graphics::points(k, post.bic[k], cex = 0.5)
   }
   cont.accept <- numeric(0)
   accept.fn <- function(x, move, fate = "accept") {
@@ -147,7 +147,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
       mr <- exp(-0.5*(bic.new - bic.old)) * (ne.old / ne.new) * rev.ratio
     if(is.na(mr) | is.null(mr))
       browser()
-    if(runif(1) <= min(1,mr)){
+    if(stats::runif(1) <= min(1,mr)){
       M.old <- M.new
       bic.old <- bic.new
       ne.old <- ne.new
@@ -170,7 +170,7 @@ mcmc.qtlnet <- function(cross, pheno.col, threshold,
       if(verbose) {
         print(c(i,k)) 
         if(verbose > 2)
-          points(k, post.bic[k], cex = 0.5)
+          graphics::points(k, post.bic[k], cex = 0.5)
       }
     }
   }
@@ -368,7 +368,7 @@ propose.new.node.edge <- function(M, max.parents = 3,
 
   prob.node <- propose["node"] * le.nodes
   prob.node <- prob.node / (prob.node + propose["edge"] * le.edges)
-  if(runif(1) <= prob.node) {
+  if(stats::runif(1) <= prob.node) {
     move <- "node"
     ## Propose new parents for a node.
     node <- sample(seq(le.nodes), 1)
@@ -411,7 +411,7 @@ propose.new.node.edge <- function(M, max.parents = 3,
     
     prob.reverse <- propose["reverse"]
     prob.reverse <- prob.reverse / (prob.reverse + propose["drop"])
-    if(runif(1) <= prob.reverse) {
+    if(stats::runif(1) <= prob.reverse) {
       ## Propose to reverse an edge.
       if(verbose)  cat("reverse ")
       aux2 <- rev.edge(M, max.parents, saved.scores, edge, verbose)

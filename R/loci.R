@@ -28,7 +28,7 @@ loci.qtlnet <- function(qtlnet.object, chr.pos=TRUE, merge.qtl = 10,
   ## Make sure cross object has genotype probabilities.
   if (!("prob" %in% names(cross$geno[[1]]))) {
       warning("First running calc.genoprob.")
-    cross <- calc.genoprob(cross)
+    cross <- qtl::calc.genoprob(cross)
   }
 
   pheno.net.str <- get.averaged.net(qtlnet.object, ...)
@@ -105,7 +105,7 @@ est.qtlnet <- function(qtlnet.object, ..., verbose = TRUE)
   ## Make sure cross object has genotype probabilities.
   if (!("prob" %in% names(cross$geno[[1]]))) {
       warning("First running calc.genoprob.")
-    cross <- calc.genoprob(cross)
+    cross <- qtl::calc.genoprob(cross)
   }
 
   pheno.net.str <- get.averaged.net(qtlnet.object, ...)
@@ -134,23 +134,23 @@ est.qtlnet <- function(qtlnet.object, ..., verbose = TRUE)
     
     if(nrow(ss)) {
       ## Determine additive and interactive covariates.
-      qtl <- makeqtl(crossi, ss$chr, ss$pos, what = "prob")
+      qtl <- qtl::makeqtl(crossi, ss$chr, ss$pos, what = "prob")
       qs <- paste("Q", seq(length(ss$chr)), sep = "", collapse = "+")
       if(length(intcov.names))
         qs <- paste("(", paste(intcov.names, collapse = "+"), ")*",
                     "(", qs, ")", sep = "")
       
-      form <- formula(paste("y ~", qs,
+      form <- stats::formula(paste("y ~", qs,
                             ifelse(is.null(cov.names), "",
                                    paste(  "+", paste(cov.names, collapse = "+")))))
-      est[[i]] <- fitqtl(crossi, i, qtl, covar, form, "hk",
+      est[[i]] <- qtl::fitqtl(crossi, i, qtl, covar, form, "hk",
                          get.ests = TRUE)$ests$ests
     }
     else { ## No QTL!
-      form <- formula(paste("y ~", paste(cov.names, collapse = "+")))
+      form <- stats::formula(paste("y ~", paste(cov.names, collapse = "+")))
       data <- as.data.frame(covar)
       data$y <- crossi$pheno[[i]]
-      est[[i]] <- coef(lm(form, data))
+      est[[i]] <- stats::coef(stats::lm(form, data))
     }
   }
   names(est) <- pheno.nms
@@ -203,5 +203,5 @@ pull.loci <- function(cross, i)
   if ("stepwidth" %in% names(attributes(cross$geno[[i]]$prob))) 
     stpw <- attr(cross$geno[[i]]$prob, "stepwidth")
   else stpw <- "fixed"
-  map <- create.map(cross$geno[[i]]$map, stp, oe, stpw)
+  map <- qtl::create.map(cross$geno[[i]]$map, stp, oe, stpw)
 }

@@ -31,9 +31,9 @@ dist.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex
               common = apply(M, 2, function(x,y) sum(x*y), M[,wh]),
               wh = wh)
   
-  plot(jitter(out$sum), jitter(out$common), xlab = "edges", ylab = "common with best")
-  abline(0,1,col = "gray")
-  abline(h = out$sum[wh], v = out$sum[wh], col = "gray")
+  graphics::plot(jitter(out$sum), jitter(out$common), xlab = "edges", ylab = "common with best")
+  graphics::abline(0,1,col = "gray")
+  graphics::abline(h = out$sum[wh], v = out$sum[wh], col = "gray")
   out
 }
 ######################################################################
@@ -48,20 +48,20 @@ edgematch.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan"
   common <- apply(M, 2, function(x,y) x*y == 1, M[,wh])
   extra <- apply(M, 2, function(x,y) x*(1-y) == 1, M[,wh])
   
-  plot(c(1, nrow(common)), c(1, ncol(common)), type = "n", xlab = "edge", ylab = "run")
-  abline(v = which(common[,wh]), col = "black")
+  graphics::plot(c(1, nrow(common)), c(1, ncol(common)), type = "n", xlab = "edge", ylab = "run")
+  graphics::abline(v = which(common[,wh]), col = "black")
   for(i in seq(ncol(common))) {
     if(i != wh & any(extra[,i]))
-      points(which(extra[,i]), rep(i, sum(extra[,i])), col = "gray")
-    points(which(common[,i]), rep(i, sum(common[,i])), col = ifelse(i==wh, "red", "black"))
+      graphics::points(which(extra[,i]), rep(i, sum(extra[,i])), col = "gray")
+    graphics::points(which(common[,i]), rep(i, sum(common[,i])), col = ifelse(i==wh, "red", "black"))
   }
 }
 ######################################################################
 mds.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex = 5)
 {
   M <- apply(qtlnet.object$Mav, 3, fold.M)
-  d <- dist(t(M), method) # euclidean distances between the cols
-  fit <- cmdscale(d,eig=TRUE, k=2) # k is the number of dim
+  d <- stats::dist(t(M), method) # euclidean distances between the cols
+  fit <- stats::cmdscale(d,eig=TRUE, k=2) # k is the number of dim
   
   ## plot solution
   x <- fit$points[,1]
@@ -70,10 +70,10 @@ mds.qtlnet <- function(qtlnet.object, min.prob = 0.9, method = "manhattan", cex 
   wh <- which.min(mbic)
   rbic <- range(mbic)
   cex <- 1 + (cex - 1) * (rbic[2] - mbic) / diff(rbic)
-  plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
+  graphics::plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
        main="Metric MDS", type="p", cex = cex)
-  points(x[wh], y[wh], cex = cex[wh], col = "red")
-  ## text(x, y, labels = row.names(M), cex=.7)
+  graphics::points(x[wh], y[wh], cex = cex[wh], col = "red")
+  ## graphics::text(x, y, labels = row.names(M), cex=.7)
   invisible(list(M=M, d=d, fit = fit, mbic = mbic))
 }
 ######################################################################
@@ -89,17 +89,17 @@ plotbic.qtlnet <- function(x, ..., smooth = TRUE)
   }
   plotfn <- function(post.bic, burnin, col = "gray") {
     tmp <- which(seq(post.bic) >= burnin * length(post.bic))
-    lines(tmp, post.bic[tmp], col = col)
+    graphics::lines(tmp, post.bic[tmp], col = col)
   }
   splotfn <- function(post.bic, burnin) {
     tmp <- which(seq(post.bic) >= burnin * length(post.bic))
-    lines(tmp, lowess(post.bic[tmp])$y, col = "black")
+    graphics::lines(tmp, stats::lowess(post.bic[tmp])$y, col = "black")
   }
 
   bicol <- ifelse(smooth, "gray", "black")
   if(runs == 1) {
     range.bic <- rngfn(x$post.bic, burnin)
-    plot(c(1,max(nSamples)),range.bic, type = "n",
+    graphics::plot(c(1,max(nSamples)),range.bic, type = "n",
          xlab = "Sample Index", ylab = "BIC")
     plotfn(x$post.bic, burnin, bicol)
   }
@@ -108,14 +108,14 @@ plotbic.qtlnet <- function(x, ..., smooth = TRUE)
     
     range.bic <- range(unlist(tapply(x$post.bic, run.id,
                                      rngfn, burnin)))
-    plot(c(1,max(nSamples)),range.bic, type = "n",
+    graphics::plot(c(1,max(nSamples)),range.bic, type = "n",
          xlab = "Sample Index", ylab = "BIC")
     
     tapply(x$post.bic, run.id, plotfn, burnin, bicol)
     if(smooth)
       tapply(x$post.bic, run.id, splotfn, burnin)
   }
-  title(paste("BIC samples for", runs, "MCMC", ifelse(runs == 1, "run", "runs")))
+  graphics::title(paste("BIC samples for", runs, "MCMC", ifelse(runs == 1, "run", "runs")))
 }
 
 ######################################################################
@@ -141,17 +141,17 @@ newfun <- function(qtlnet.object, burnin = attr(qtlnet.object, "burnin"),
 
   runM <- apply(qtlnet.object$M, 1:2, sum)
   runM <- (runM + t(runM))[upper.tri(runM)]
-  plot(upM,runM)
+  graphics::plot(upM,runM)
   M <- qtlnet.object$M[,,wh]
   whs <- which(M[upper.tri(M)] > 0.9 | t(M)[upper.tri(M)] > 0.9)
-  points(upM[whs], runM[whs], col = "red")
+  graphics::points(upM[whs], runM[whs], col = "red")
 
   ## This is easier to understand.
   ## Does M1 have an edge, and does it agree with most of the runs?
   M1u <- (M1+t(M1))[upper.tri(M1)]
-  plot(M1u, runM)
-  points(M1u[whs], runM[whs], col = "red")
-  abline(v=0.9)
+  graphics::plot(M1u, runM)
+  graphics::points(M1u[whs], runM[whs], col = "red")
+  graphics::abline(v=0.9)
 }
 zero.M <- function(qtlnet.object, run = which.min(mbic),
                    burnin = attr(qtlnet.object, "burnin"))

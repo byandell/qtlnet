@@ -7,10 +7,10 @@ cov.formula <- function(addcov=NULL, intcov=NULL, nQ, cross.type = "f2")
   }
   if(!is.null(addcov) & is.null(intcov)){ 
     if(nQ > 0){
-      myform <- as.formula(paste("y ~ ", paste(c(addcov,Qnames), collapse = "+")))
+      myform <- stats::as.formula(paste("y ~ ", paste(c(addcov,Qnames), collapse = "+")))
     }
     else{
-      myform <- as.formula(paste("y ~ ", paste(addcov, collapse = "+")))
+      myform <- stats::as.formula(paste("y ~ ", paste(addcov, collapse = "+")))
     }
   }
   if(!is.null(intcov)){
@@ -21,18 +21,18 @@ cov.formula <- function(addcov=NULL, intcov=NULL, nQ, cross.type = "f2")
       for(i in 1:le){
         intQnames <- c(intQnames,paste(intaddcov[i], Qnames, sep=":"))
       }
-      myform <- as.formula(paste("y ~ ", paste(c(intaddcov,Qnames,intQnames), collapse = "+")))
+      myform <- stats::as.formula(paste("y ~ ", paste(c(intaddcov,Qnames,intQnames), collapse = "+")))
     }
     else{
-      myform <- as.formula(paste("y ~ ", paste(intaddcov, collapse = "+")))
+      myform <- stats::as.formula(paste("y ~ ", paste(intaddcov, collapse = "+")))
     }
   }
   if(is.null(addcov) & is.null(intcov)){
     if(nQ > 0){
-      myform <- as.formula(paste("y ~ ", paste(Qnames, collapse = "+")))
+      myform <- stats::as.formula(paste("y ~ ", paste(Qnames, collapse = "+")))
     }
     else{
-      myform <- as.formula("y ~ 1")
+      myform <- stats::as.formula("y ~ 1")
     }
   }	
   myform
@@ -44,8 +44,8 @@ create.cov.matrix <- function(cross, cov.names)
     cov.names <- names(cross$pheno)[cov.names]
   
   if(length(cov.names)){
-    myformula <- formula(paste("~", paste(cov.names, collapse = "+")))
-    model.matrix(myformula, cross$pheno)[,-1, drop = FALSE]
+    myformula <- stats::formula(paste("~", paste(cov.names, collapse = "+")))
+    stats::model.matrix(myformula, cross$pheno)[,-1, drop = FALSE]
   }
   else
     NULL

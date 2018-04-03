@@ -74,7 +74,7 @@ summary.qtlnet <- function(object, parent.patterns = FALSE, ...)
 
   freq.accept <- object$freq.accept
   if(length(freq.accept) > 1)
-    freq.accept <- weighted.mean(freq.accept, attr(object, "nSamples"))
+    freq.accept <- stats::weighted.mean(freq.accept, attr(object, "nSamples"))
   
   out <- list(freq.accept = freq.accept,
               averaged.net = get.averaged.net(object, pheno.names, ...),

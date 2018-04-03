@@ -11,7 +11,7 @@ get.model.average <- function(qtlnet.object)
   else {
     nSamples <- attr(qtlnet.object, "nSamples")
     if(length(nSamples) > 1)
-      mav <- apply(mav, c(1,2), weighted.mean, nSamples)
+      mav <- apply(mav, c(1,2), stats::weighted.mean, nSamples)
   }
   mav
 }
