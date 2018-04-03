@@ -348,7 +348,7 @@ propose.new.node.edge <- function(M, max.parents = 3,
                                   check.down = FALSE,
                                   verbose = FALSE, ...)
 {
-  ## Ref: Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
+  ## Ref: Grzegorczyk and Husmeier (2008) Mach Learn 71: 265-305.
   ## Extension is to updating individual nodes and dropping edges.
   rev.ratio <- 1
 
@@ -454,7 +454,7 @@ propose.new.structure <- function(M, max.parents = 3,
                                   verbose = FALSE, ...)
 {
   ## Acceptance rate is <20%. Could we improve here?
-  ## Yes. See Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
+  ## Yes. See Grzegorczyk and Husmeier (2008) Mach Learn 71: 265-305.
   rev.ratio <- 1
 
   ## To speed up, use M as logical matrix. Still return 0/1 matrix for now.
@@ -601,7 +601,7 @@ update.node <- function(M, max.parents, saved.scores, node, verbose = FALSE)
 ######################################################################
 drop.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
 {
-  ## Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
+  ## Grzegorczyk and Husmeier (2008) Mach Learn 71: 265-305.
   ## Call provides node.pair[1 -> 2].
 
   ## Step 1: Orphan both nodes after computing reverse proposal prob.
@@ -691,7 +691,7 @@ reverse.proposal <- function(M, saved.scores, node.pair, verbose = FALSE)
 ######################################################################
 rev.edge <- function(M, max.parents, saved.scores, node.pair, verbose = FALSE)
 {
-  ## Grzegorczyk and Husmeier (2008) Mach Learn 71: 265–305.
+  ## Grzegorczyk and Husmeier (2008) Mach Learn 71: 265-305.
   ## Call provides node.pair[1 -> 2].
 
   ## Step 1: Orphan both nodes after computing reverse proposal prob.

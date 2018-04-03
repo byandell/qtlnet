@@ -28,7 +28,7 @@ submitting to a cluster, this should remain the default.
 \details{
 See \url{http://www.stat.wisc.edu/~yandell/sysgen/qtlnet} for details of
 implementation in progress. The plan is to run qtlnet via Condor
-(\url{http://www.condor.org}) to scale up to larger networks, say up to
+(\url{https://research.cs.wisc.edu/htcondor/}) to scale up to larger networks, say up to
 100 nodes. Most important information is passed in files. Phase 1
 imports arguments from the \code{params.txt} file, which must have
 parse-able assignments to the arguments of
