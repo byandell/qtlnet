@@ -90,7 +90,7 @@ transformPCtoUDG <- function(PC)
   edges <- graph::edges(PC@graph)  
   tmp1 <- rep(names(edges), sapply(edges, length))
   tmp2 <- unlist(edges)
-  UDG <- data.frame(matrix(NA,length(tmp1), 2))
+  UDG <- data.frame(matrix(NA,length(tmp1), 2), stringsAsFactors = TRUE)
   UDG[,1] <- as.numeric(tmp1)
   UDG[,2] <- as.numeric(tmp2)
   UDG <- UDG[as.numeric(tmp1) < as.numeric(tmp2), ]
@@ -130,7 +130,7 @@ approximate.UDG <- function(Data, alpha, fixed.order = 2)
   nv <- length(Data[1, ])
   aux.comb <- c(1:nv)
   R <- stats::cor(Data, method = "spearman")
-  UDG <- data.frame(matrix(1, nv*(nv-1)/2, 3))
+  UDG <- data.frame(matrix(1, nv*(nv-1)/2, 3), stringsAsFactors = TRUE)
   names(UDG) <- c("node1", "node2", "edge")
   cp <- 1
   for(i in 1:(nv-1)){

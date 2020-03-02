@@ -27,7 +27,7 @@ write.qtlnet <- function(x,
     out.width <- c(out.width, loci.width)
   }
     
-  out <- as.data.frame(out)
+  out <- as.data.frame(out, stringsAsFactors = TRUE)
   out$width <- round(out.width, digits)
 
   if(include.est) {

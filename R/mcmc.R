@@ -831,7 +831,7 @@ check.qtlnet <- function(object,
         forbid <- rbind(forbid, cbind(downf[wh],i, M[i, downf[wh]]))
     }
     if(!is.null(forbid)) {
-      forbid <- data.frame(forbid)
+      forbid <- data.frame(forbid, stringsAsFactors = TRUE)
       names(forbid) <- c("cause","react","prob")
       for(i in 1:2)
         forbid[[i]] <- ordered(pheno.names[forbid[[i]]], pheno.names)

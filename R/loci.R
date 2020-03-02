@@ -148,7 +148,7 @@ est.qtlnet <- function(qtlnet.object, ..., verbose = TRUE)
     }
     else { ## No QTL!
       form <- stats::formula(paste("y ~", paste(cov.names, collapse = "+")))
-      data <- as.data.frame(covar)
+      data <- as.data.frame(covar, stringsAsFactors = TRUE)
       data$y <- crossi$pheno[[i]]
       est[[i]] <- stats::coef(stats::lm(form, data))
     }

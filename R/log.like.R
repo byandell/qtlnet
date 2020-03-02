@@ -34,11 +34,13 @@ get.cov.loglik <- function(resp,DG)
 log.likelihood.s <- function(cross, node, markers, cov.node, genotypes, addcov=NULL, intcov=NULL)
 {
   node.col <- qtl::find.pheno(cross, pheno=node)
-  y <- data.frame(cross$pheno[,node.col])
+  y <- data.frame(cross$pheno[,node.col],
+                  stringsAsFactors = TRUE)
   names(y) <- "y"
   nQ <- length(markers)
   if(nQ > 0){
-    mygeno <- data.frame(genotypes[,markers])
+    mygeno <- data.frame(genotypes[,markers],
+                         stringsAsFactors = TRUE)
     nQ <- length(mygeno[1,])
     for(i in 1:nQ){
       mygeno[,i] <- as.factor(mygeno[,i])
@@ -46,37 +48,52 @@ log.likelihood.s <- function(cross, node, markers, cov.node, genotypes, addcov=N
     names(mygeno) <- paste("Q",1:nQ,sep="")
     if(!is.null(cov.node)){
       covar.node <- data.frame(cross$pheno[, c(intcov,addcov)],
-                               cross$pheno[, qtl::find.pheno(cross, pheno=cov.node)])
+                               cross$pheno[, qtl::find.pheno(cross, pheno=cov.node)],
+                               stringsAsFactors = TRUE)
       names(covar.node) <- c(intcov,addcov,cov.node)
       aux <- s.formula(addcov=names(covar.node), intcov=intcov, nQ=nQ, dat=covar.node)
-      mylm <- stats::lm(aux[[1]],data.frame(y,aux[[2]],mygeno))
+      mylm <- stats::lm(aux[[1]],
+                        data.frame(y,aux[[2]],mygeno,
+                                   stringsAsFactors = TRUE))
       mylist <- list(stats::logLik(mylm)[[1]],
                      stats::AIC(mylm,k=log(length(y[,1]))))
     }
     else{
-      covar.node <- data.frame(cross$pheno[,c(intcov,addcov)])
+      covar.node <- data.frame(cross$pheno[,c(intcov,addcov)],
+                               stringsAsFactors = TRUE)
       names(covar.node) <- c(intcov,addcov)
       aux <- s.formula(addcov=names(covar.node), intcov=intcov, nQ=nQ, dat=covar.node)
-      if(!is.null(aux[[2]])) mylm <- stats::lm(aux[[1]],data.frame(y,aux[[2]],mygeno))
-      if(is.null(aux[[2]])) mylm <- stats::lm(aux[[1]],data.frame(y,mygeno))
+      if(!is.null(aux[[2]])) mylm <- stats::lm(aux[[1]],
+                                               data.frame(y,aux[[2]],mygeno,
+                                                          stringsAsFactors = TRUE))
+      if(is.null(aux[[2]])) mylm <- stats::lm(aux[[1]],
+                                              data.frame(y,mygeno,
+                                                         stringsAsFactors = TRUE))
       mylist <- list(stats::logLik(mylm)[[1]],
                      stats::AIC(mylm,k=log(length(y[,1]))))
     }
   }
   else{
     if(!is.null(cov.node)){
-      covar.node <- data.frame(cross$pheno[,c(intcov,addcov)],cross$pheno[,qtl::find.pheno(cross, pheno=cov.node)])
+      covar.node <- data.frame(cross$pheno[,c(intcov,addcov)],
+                               cross$pheno[,qtl::find.pheno(cross, pheno=cov.node)],
+                               stringsAsFactors = TRUE)
       names(covar.node) <- c(intcov,addcov,cov.node)
       aux <- s.formula(addcov=names(covar.node), intcov=intcov, nQ=0, dat=covar.node)
-      mylm <- stats::lm(aux[[1]],data.frame(y,aux[[2]]))
+      mylm <- stats::lm(aux[[1]],
+                        data.frame(y,aux[[2]],
+                                   stringsAsFactors = TRUE))
       mylist <- list(stats::logLik(mylm)[[1]],
                      stats::AIC(mylm,k=log(length(y[,1]))))
     }
     else{
-      covar.node <- data.frame(cross$pheno[,c(intcov,addcov)])
+      covar.node <- data.frame(cross$pheno[,c(intcov,addcov)],
+                               stringsAsFactors = TRUE)
       names(covar.node) <- c(intcov,addcov)
       aux <- s.formula(addcov=names(covar.node), intcov=intcov, nQ=0, dat=covar.node)
-      if(!is.null(aux[[2]])) mylm <- stats::lm(aux[[1]],data.frame(y,aux[[2]]))
+      if(!is.null(aux[[2]])) mylm <- stats::lm(aux[[1]],
+                                               data.frame(y,aux[[2]],
+                                                          stringsAsFactors = TRUE))
       if(is.null(aux[[2]])) mylm <- stats::lm(aux[[1]],y)
       mylist <- list(stats::logLik(mylm)[[1]],
                      stats::AIC(mylm,k=log(length(y[,1]))))
@@ -90,7 +107,8 @@ s.formula <- function(addcov=NULL, intcov=NULL, nQ, dat)
   if(!is.null(addcov) & is.null(intcov)){ 
     mycovs <- dat[,addcov]
     form <- stats::as.formula(paste(" ~ ", paste(addcov,collapse="+")))
-    mycovs <- data.frame(stats::model.matrix(form,dat)[,-1])
+    mycovs <- data.frame(stats::model.matrix(form,dat)[,-1],
+                         stringsAsFactors = TRUE)
     addcov <- names(mycovs)
     if(nQ > 0){
       Qnames <- paste("Q", 1:nQ, sep = "")
@@ -105,7 +123,8 @@ s.formula <- function(addcov=NULL, intcov=NULL, nQ, dat)
     intaddcov <- unique(c(intcov,addcov))
     mycovs <- dat[,c(intaddcov)]
     form <- stats::as.formula(paste(" ~ ", paste(intaddcov,collapse="+")))
-    mycovs <- data.frame(stats::model.matrix(form,dat)[,-1])
+    mycovs <- data.frame(stats::model.matrix(form,dat)[,-1],
+                         stringsAsFactors = TRUE)
     intaddcov <- names(mycovs)
     if(nQ > 0){
       Qnames <- paste("Q", 1:nQ, sep = "")

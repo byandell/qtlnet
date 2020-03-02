@@ -67,4 +67,3 @@ Ann Appl Statist 4: 320-339.
 \examples{
 write.qtlnet(Pscdbp.qtlnet, "Pscdbp.txt")
 }
-\keyword{ ~kwd1 }

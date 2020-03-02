@@ -115,15 +115,15 @@ set.dat.form <- function(y, covM.dat=NULL, addcov.dat=NULL, intcov.dat=NULL,
                          geno.dat=NULL, le.markers = 0, cross.type = "f2")
 {
   ## Set up data.frame
-  dat <- data.frame(y = y)
+  dat <- data.frame(y = y, stringsAsFactors = TRUE)
   if(!is.null(covM.dat))
-    dat <- cbind.data.frame(dat, covM.dat)
+    dat <- cbind.data.frame(dat, covM.dat, stringsAsFactors = TRUE)
   if(!is.null(addcov.dat))
-    dat <- cbind.data.frame(dat, addcov.dat)
+    dat <- cbind.data.frame(dat, addcov.dat, stringsAsFactors = TRUE)
   if(!is.null(intcov.dat))
-    dat <- cbind.data.frame(dat, intcov.dat)
+    dat <- cbind.data.frame(dat, intcov.dat, stringsAsFactors = TRUE)
   if(!is.null(geno.dat))
-    dat <- cbind.data.frame(dat, geno.dat)
+    dat <- cbind.data.frame(dat, geno.dat, stringsAsFactors = TRUE)
 
   ## Set up formula.
   form <- cov.formula(c(names(covM.dat),names(addcov.dat)),

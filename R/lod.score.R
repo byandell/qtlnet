@@ -17,10 +17,12 @@ lod.score <- function(cross, node1, node2, qtl.node1, qtl.node2, cov.node1=NULL,
       qtl::fitqtl(cross, pheno.col, ...)
   
   node1.col <- qtl::find.pheno(cross, pheno=node1)
-  node1 <- data.frame(node1 = cross$pheno[,node1.col])
+  node1 <- data.frame(node1 = cross$pheno[,node1.col],
+                      stringsAsFactors = TRUE)
 
   node2.col <- qtl::find.pheno(cross, pheno=node2)
-  node2 <- data.frame(node2 = cross$pheno[,node2.col])
+  node2 <- data.frame(node2 = cross$pheno[,node2.col],
+                      stringsAsFactors = TRUE)
   
   if(is.null(cov.node1)) {
     dat1 <- add1 <- NULL
@@ -28,9 +30,11 @@ lod.score <- function(cross, node1, node2, qtl.node1, qtl.node2, cov.node1=NULL,
   }
   else {
     add1 <- cov.node1
-    dat1 <- data.frame(cross$pheno[,add1])
+    dat1 <- data.frame(cross$pheno[,add1],
+                       stringsAsFactors = TRUE)
     names(dat1) <- add1
-    dat2 <- data.frame(node2, dat1)
+    dat2 <- data.frame(node2, dat1,
+                       stringsAsFactors = TRUE)
   }
   add2 <- c("node2", add1)
 
@@ -48,9 +52,11 @@ lod.score <- function(cross, node1, node2, qtl.node1, qtl.node2, cov.node1=NULL,
   }
   else {
     add1 <- cov.node2
-    dat1 <- data.frame(cross$pheno[,add1])
+    dat1 <- data.frame(cross$pheno[,add1],
+                       stringsAsFactors = TRUE)
     names(dat1) <- add1
-    dat2 <- data.frame(node1, dat1)
+    dat2 <- data.frame(node1, dat1,
+                       stringsAsFactors = TRUE)
   }
   add2 <- c("node1", add1)
 

@@ -50,7 +50,7 @@ igraph.qtlnet <- function(x,
     names(edges)[3] <- "width"
   }
   else {
-    loci.data.frame <- data.frame(qtl = unlist(loci.list))
+    loci.data.frame <- data.frame(qtl = unlist(loci.list), stringsAsFactors = TRUE)
     loci.data.frame$pheno <- rep(names(loci.list), sapply(loci.list, length))
 
     pheno.names <- node.names
@@ -61,7 +61,8 @@ igraph.qtlnet <- function(x,
                               effect = c(as.character(edges[[2]]),
                                 as.character(loci.data.frame[[2]])),
                               width = c(edges[[3]],
-                                rep(1, nrow(loci.data.frame))))
+                                rep(1, nrow(loci.data.frame))),
+                              stringsAsFactors = TRUE)
 
     node.color <- rep(qtl.color, length(node.names))
     node.color[node.names %in% pheno.names] <- pheno.color
@@ -71,7 +72,8 @@ igraph.qtlnet <- function(x,
   ## Set up vertices
   vertex.color <- array(vertex.color, length(node.names))
   vertices <- data.frame(name = node.names, label = node.names,
-                         color = vertex.color, fill = vertex.color)
+                         color = vertex.color, fill = vertex.color,
+                         stringsAsFactors = TRUE)
 
   ## Great graph object (library igraph).
   igraph::igraph.options(print.graph.attributes = TRUE,
@@ -88,13 +90,13 @@ get.graph.vertices <- function(graph)
   out <- list()
   for(i in attr)
     out[[i]] <- igraph::get.vertex.attribute(graph, i)
-  data.frame(out)
+  data.frame(out, stringsAsFactors = TRUE)
 }
 ############################################################
 get.graph.edges <- function(graph)
 {
   attr <- igraph::list.edge.attributes(graph)
-  out <- as.data.frame(igraph::get.edgelist(graph))
+  out <- as.data.frame(igraph::get.edgelist(graph), stringsAsFactors = TRUE)
   names(out) <- c("cause","effect")
   for(i in attr)
     out[[i]] <- igraph::get.edge.attribute(graph, i)
@@ -115,11 +117,14 @@ igraph.qdg <- function(x,
   ## Prepare parameters for plotting function.
   if(inherits(x, "qdg")){ 
     best <- which(x$Solutions$BIC == min(x$Solutions$BIC))
-    pheno.output <- data.frame(x$Solutions$solutions[[best]],rep(0,nrow(x$Solutions$solutions[[best]])))
+    pheno.output <- data.frame(x$Solutions$solutions[[best]],
+                               rep(0,nrow(x$Solutions$solutions[[best]])),
+                               stringsAsFactors = TRUE)
   }
   else if (inherits(x, "qdg.sem")){ 
     best <- which(x$BIC.SEM[,1] == min(x$BIC.SEM[,1]))
-    pheno.output <- data.frame(x$Solutions$solutions[[best]],x$path.coeffs)
+    pheno.output <- data.frame(x$Solutions$solutions[[best]],x$path.coeffs,
+                               stringsAsFactors = TRUE)
   }
   names(pheno.output) <- c(names(x$Solutions$solutions[[best]]),"path")
 
@@ -133,7 +138,8 @@ igraph.qdg <- function(x,
   }
   loci <- x$phenotype.names
   myedges <- data.frame(cause = factor(node1, loci), effect = factor(node2, loci),
-                      prob = stats::pchisq(log(10) * pheno.output$lod, 1))
+                        prob = stats::pchisq(log(10) * pheno.output$lod, 1),
+                        stringsAsFactors = TRUE)
   myloci.list <- x$marker.names
 
   igraph.qtlnet(x, edges, loci.list, ...)

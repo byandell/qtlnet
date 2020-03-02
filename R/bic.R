@@ -144,7 +144,8 @@ parents.qtlnet <- function(pheno.col, max.parents = 3, codes.only = FALSE)
     if(codes.only)
       parents <- c(parents, name.combs)
     else {
-      combs <- as.list(as.data.frame(combs))
+      combs <- as.list(as.data.frame(combs,
+                                     stringsAsFactors = TRUE))
       names(combs) <- name.combs
       parents <- c(parents, combs)
     }
@@ -160,7 +161,8 @@ summary.parents.qtlnet <- function(object, ...)
 {
   n.pheno <- attr(object, "n.pheno")
   
-  out <- data.frame(parents = sapply(object, paste, collapse = ","))
+  out <- data.frame(parents = sapply(object, paste, collapse = ","),
+                    stringsAsFactors = TRUE)
   out$n.child <- n.pheno - sapply(object, length)
   out
 }
@@ -189,7 +191,8 @@ calc.bic <- function(cross, code, pheno.col, parents, addcov, intcov, threshold,
   run$bic <- bic
   data.frame(code = run$code,
              pheno.col = run$pheno.cols,
-             bic = bic)
+             bic = bic,
+             stringsAsFactors = TRUE)
 }
 ###########################################################################################
 find.code <- function(pheno.cols, pheno.parents)

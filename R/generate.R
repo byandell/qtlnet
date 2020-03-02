@@ -195,7 +195,7 @@ generate.data <- function(cross,bp,bq,stdev,allqtl)
   for(i in seq(length(node.parents)))
     y[,i] <- geno.effect(node.parents[[i]], bq, bp, stdev, allqtl, n, y)
 
-  y <- data.frame(y)
+  y <- data.frame(y, stringsAsFactors = TRUE)
   names(y) <- paste("y",1:100,sep="")
   cross$pheno <- y
   return(cross)
@@ -316,7 +316,7 @@ generate.data.2or3 <- function(cross, bp, bq, stdev, allqtl)
   for(i in seq(length(node.parents)))
     y[,i] <- geno.effect(node.parents[[i]], bq, bp, stdev, allqtl)
 
-  y <- data.frame(y)
+  y <- data.frame(y, stringsAsFactors = TRUE)
   names(y) <- paste("y",1:100,sep="")
   cross$pheno <- y
   cross
@@ -397,7 +397,7 @@ generate.data.graph.a <- function(cross,burnin,bq,bp,stdev,geno)
     mu <- compute.mu(ind.geno=geno[i,],bq=bq)
     y[i,] <- as.vector(gibbs.graph.a(n=1,burnin=burnin,bp,stdev,mu=mu))
   }
-  y <- data.frame(y)
+  y <- data.frame(y, stringsAsFactors = TRUE)
   names(y) <- c("y1","y2","y3","y4","y5","y6")
   cross$pheno <- y
   return(cross)
@@ -451,7 +451,7 @@ generate.data.graph.b <- function(cross,burnin,bq,bp,stdev,geno)
     mu <- compute.mu(ind.geno=geno[i,],bq=bq)
     y[i,] <- as.vector(gibbs.graph.b(n=1,burnin=burnin,bp,stdev,mu=mu))
   }
-  y <- data.frame(y)
+  y <- data.frame(y, stringsAsFactors = TRUE)
   names(y) <- c("y1","y2","y3","y4","y5","y6")
   cross$pheno <- y
   return(cross)
@@ -504,7 +504,7 @@ generate.data.graph.c <- function(cross,burnin,bq,bp,stdev,geno)
     tmp <- gibbs.graph.c(n=1, burnin, bp, stdev, mu)
     y[i,] <- as.vector(gibbs.graph.c(n=1, burnin, bp, stdev, mu))
   }
-  y <- data.frame(y)
+  y <- data.frame(y, stringsAsFactors = TRUE)
   names(y) <- paste("y", 1:6, sep = "")
   cross$pheno <- y
   return(cross)

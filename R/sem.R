@@ -63,7 +63,8 @@ qdg.sem <- function(qdgObject, cross)
     else
       dropped <- NULL
     
-    output <- data.frame(cbind(semBIC,approx.posterior(semBIC)))
+    output <- data.frame(cbind(semBIC,approx.posterior(semBIC)),
+                         stringsAsFactors = TRUE)
     names(output) <- c("sem.BIC","posterior prob")
     row.names(output) <- paste("model.",1:n.sol,sep="")
     ## if there are ties, returns the first.

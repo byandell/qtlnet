@@ -179,7 +179,8 @@ zero.M <- function(qtlnet.object, run = which.min(mbic),
   data.frame(nonzero = apply(out, 2, sum),
              agree = apply(out, 2, function(x,y) sum(x == y & y > 0),
                out[,run]),
-             mean.bic = mbic)
+             mean.bic = mbic,
+             stringsAsFactors = TRUE)
 }
 best.qtlnet <- function(x, burnin = attr(x, "burnin"),
                         wh = which.min(meanbic(x, burnin)))

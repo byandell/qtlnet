@@ -187,7 +187,7 @@ averaged.posterior.table <- function(maM,nms)
 {
   nn <- nrow(maM)
   np <- choose(nn,2)
-  out <- data.frame(matrix(NA,np,5))
+  out <- data.frame(matrix(NA,np,5), stringsAsFactors = TRUE)
   k <- 1
   for(i in 1:(nn-1)){
     for(j in (i+1):nn){
@@ -215,7 +215,8 @@ M.2.lista <- function(M,pheno.names)
   le2 <- le*(le-1)/2
   out <- data.frame(cause = factor(rep(NA, le2), pheno.names),
                     effect = factor(rep(NA, le2), pheno.names),
-                    prob = rep(NA, le2))
+                    prob = rep(NA, le2),
+                    stringsAsFactors = TRUE)
 
   for(i in 1:(le-1)){
     for(j in (i+1):le){

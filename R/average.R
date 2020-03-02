@@ -31,7 +31,8 @@ get.posterior.prob <- function(qtlnet.object)
   post.bic <- qtlnet.object$post.bic[post.burnin]
   
   out <- data.frame(post.prob = as.vector(table(post.model)) / length(post.model),
-               BIC  = tapply(post.bic, post.model, mean))
+               BIC  = tapply(post.bic, post.model, mean),
+               stringsAsFactors = TRUE)
   out[order(-out$post.prob, out$BIC),]
 }
 ##########################################################################

@@ -43,4 +43,4 @@ Ann Appl Statist 4: 320-339.
 \examples{
 loci.qtlnet(Pscdbp.qtlnet)
 }
-\keyword{ ~kwd1 }
+

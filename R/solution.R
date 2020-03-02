@@ -44,7 +44,7 @@ order.as <- function(as)
 {
   aux1 <- row.names(as)
   n <- length(aux1)
-  ordered <- data.frame(matrix(0,n,4))
+  ordered <- data.frame(matrix(0,n,4), stringsAsFactors = TRUE)
   for(i in 1:n){
     aux2 <- which(aux1==i)
     ordered[i,] <- as[aux2,]
@@ -130,7 +130,7 @@ orient.graph.edges <- function(cross,UDG,QTLs,addcov=NULL,intcov=NULL)
 {
   UDG <- subset(UDG,UDG[,3]==1)
   le <- length(UDG[,1])
-  DG <- data.frame(matrix(0,le,4))
+  DG <- data.frame(matrix(0,le,4), stringsAsFactors = TRUE)
   for(i in 1:le){
     node1 <- DG[i,1] <- UDG[i,1]
     node2 <- DG[i,3] <- UDG[i,2]
