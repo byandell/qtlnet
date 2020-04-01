@@ -53,7 +53,6 @@ mygeno <- pull.geno(mycross)[, unlist(cyclicc.qtl$markers)]
 cyclicc.data <- generate.qtl.pheno("cyclicc", cross = mycross, burnin = 2000,
   bq = c(0.2,0.3,0.4), bp = bp, stdev = stdev, geno = mygeno)
 save(cyclicc.qtl, cyclicc.data, file = "cyclicc.RData", compress = TRUE)
-}
 
 data(cyclicc)
 out <- qdg(cross=cyclicc.data, 
@@ -66,5 +65,6 @@ out <- qdg(cross=cyclicc.data,
 
 gr <- graph.qdg(out)
 plot(gr)
+}
 }
 \keyword{datagen}

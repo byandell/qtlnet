@@ -81,7 +81,6 @@ acyclic.qdg <- qdg(cross=acyclic.data,
 		skel.method="pcskel")
 save(acyclic.DG, acyclic.qtl, acyclic.data, acyclic.qdg,
   file = "acyclic.RData", compress = TRUE)
-}
 
 data(acyclic)
 
@@ -93,5 +92,6 @@ summary(pc)
 summary(graph.qdg(acyclic.qdg))
 gr <- graph.qdg(acyclic.qdg, include.qtl = FALSE)
 plot(gr)
+}
 }
 \keyword{datagen}

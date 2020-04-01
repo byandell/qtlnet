@@ -42,37 +42,39 @@ options(repos=repos)
 
 \section{QTLNET routines}
 
+Examples not run due to some incompatibility with igraph and new R4.0.
+
 <<>>=
 library(qtlnet)
 @ 
 
 Acyclic example:
 
-<<fig=TRUE>>=
+<<fig=TRUE, eval=FALSE>>=
 example(acyclic)
 @
 
 Cyclic A example:
 
-<<fig=TRUE>>=
+<<fig=TRUE, eval=FALSE>>=
 example(cyclica)
 @ 
 
 Cyclic B example:
 
-<<fig=TRUE>>=
+<<fig=TRUE, eval=FALSE>>=
 example(cyclicb)
 @ 
 
 Cyclic C example:
 
-<<fig=TRUE>>=
+<<fig=TRUE, eval=FALSE>>=
 example(cyclicc)
 @ 
 
 GLX network example (from Chaibub Neto et al. (2008)):
 
-<<fig=TRUE>>=
+<<fig=TRUE, eval=FALSE>>=
 example(glxnet)
 @ 
 \section{QDG routines}

@@ -134,10 +134,11 @@ out <- qdg(cross=mycross,
 		skel.method="pcskel")
 
 out
+\dontrun{
 gr <- graph.qdg(out)
 gr
 plot(gr)
-
+}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

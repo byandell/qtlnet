@@ -19,7 +19,7 @@ data(Pscdbp.qtlnet)
   \code{\link{mcmc.qtlnet}}
 }
 \source{
-\url{http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/MouseWeight}
+\url{https://horvath.genetics.ucla.edu/coexpressionnetwork/}
 }
 \references{
 Ghazalpour A, Doss S, Zhang B, Wang S, Plaisier C, Castellanos R,

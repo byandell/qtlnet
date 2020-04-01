@@ -110,6 +110,8 @@ out <- qdg(cross=mycross,
 		alpha = 0.005, 
 		n.qdg.random.starts=10, 
 		skel.method="pcskel")
+		
+\dontrun{
 gr <- graph.qdg(out)
 plot(gr)
 
@@ -118,6 +120,7 @@ out2 <- qdg.sem(out, cross=mycross)
 out2
 gr2 <- graph.qdg(out2)
 plot(gr2)
+}
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

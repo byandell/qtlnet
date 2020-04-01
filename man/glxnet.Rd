@@ -48,10 +48,12 @@ glxnet.qdg <- qdg(cross=glxnet.cross,
 		skel.method="udgskel",
 		udg.order=6)
 glxnet.qdg
+
+\dontrun{
 gr <- graph.qdg(glxnet.qdg)
 plot(gr)
+
 ## Or use tkplot().
-\dontrun{
 glxnet.cross <- clean(glxnet.cross)
 save(glxnet.cross, glxnet.qdg, glxnet.qtl, file = "glxnet.RData", compress = TRUE)
 }
